@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+agrobot-bd/server/node_modules/
+agrobot-bd/client/node_modules/
+
+# Environment variables - SENSITIVE FILES
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# API Keys and Secrets
+*.key
+*.pem
+*.p12
+credentials.json
+service-account.json
+huggingface_token.txt
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+agrobot-bd/client/dist/
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+
+# Production builds
+agrobot-bd/client/dist/
+
+# Cache
+.cache/
+
+# Test results
+.nyc_output/
+
+# Docker
+Dockerfile
+.docker/
+
+# Misc
+.parcel-cache/
+
+# Hugging Face cache
+.huggingface/
+hf_cache/
+
+# VS Code settings
+.settings/
+
+# Backup files
+*.bak
+*.backup

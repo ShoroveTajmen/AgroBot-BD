@@ -1,0 +1,740 @@
+[
+  {
+    "cropName": "Rice",
+    "diseaseName": "Brown Spot",
+    "symptoms": [
+      "brown spots on leaves",
+      "oval lesions",
+      "yellow halo",
+      "poor growth"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove heavily infected leaves; apply balanced fertilizer; use approved fungicide such as mancozeb if spreading.",
+    "preventionTips": [
+      "Use clean seed",
+      "Avoid nutrient stress",
+      "Keep field sanitation"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in nutrient-poor paddy fields during humid weather.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Rice",
+    "diseaseName": "Blast",
+    "symptoms": [
+      "diamond shaped leaf lesions",
+      "gray center",
+      "brown border",
+      "neck rot"
+    ],
+    "causeType": "fungal",
+    "treatment": "Avoid excess nitrogen; keep field drained if possible; apply tricyclazole-based fungicide when severe.",
+    "preventionTips": [
+      "Use resistant variety",
+      "Balanced nitrogen",
+      "Remove infected straw"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Frequent in humid Boro/Aman rice areas.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Rice",
+    "diseaseName": "Sheath Blight",
+    "symptoms": [
+      "water soaked lesions on sheath",
+      "greenish gray spots",
+      "lodging"
+    ],
+    "causeType": "fungal",
+    "treatment": "Improve spacing and airflow; reduce nitrogen; apply validazole/hexaconazole if severe.",
+    "preventionTips": [
+      "Avoid dense planting",
+      "Balanced fertilizer",
+      "Field sanitation"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Often appears in dense humid paddy fields.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Rice",
+    "diseaseName": "Bacterial Leaf Blight",
+    "symptoms": [
+      "yellowing from leaf tip",
+      "wavy leaf margins",
+      "drying leaves"
+    ],
+    "causeType": "bacterial",
+    "treatment": "Do not apply extra nitrogen; remove infected debris; drain field briefly where suitable.",
+    "preventionTips": [
+      "Use resistant variety",
+      "Clean field channels",
+      "Avoid leaf injury"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Spreads fast after rain, wind, and flood stress.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Rice",
+    "diseaseName": "Tungro",
+    "symptoms": [
+      "orange yellow leaves",
+      "stunted plants",
+      "reduced tillering"
+    ],
+    "causeType": "viral",
+    "treatment": "Remove infected plants; control green leafhopper with recommended IPM methods.",
+    "preventionTips": [
+      "Control leafhopper",
+      "Use resistant variety",
+      "Synchronous planting"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Important in rice zones where leafhopper pressure is high.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Rice",
+    "diseaseName": "Stem Borer",
+    "symptoms": [
+      "dead heart",
+      "white head",
+      "holes in stem",
+      "larvae inside stem"
+    ],
+    "causeType": "pest",
+    "treatment": "Collect egg masses; use pheromone traps; apply recommended insecticide only if economic threshold is crossed.",
+    "preventionTips": [
+      "Light traps",
+      "Pheromone traps",
+      "Destroy stubble"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in Boro and Aman seasons.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Wheat",
+    "diseaseName": "Leaf Rust",
+    "symptoms": [
+      "orange pustules on leaves",
+      "rust powder",
+      "yellowing leaves"
+    ],
+    "causeType": "fungal",
+    "treatment": "Use resistant variety next season; apply propiconazole/tebuconazole if early severe infection.",
+    "preventionTips": [
+      "Remove volunteer wheat",
+      "Resistant variety",
+      "Balanced fertilizer"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Can spread in cool moist winter conditions.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Wheat",
+    "diseaseName": "Loose Smut",
+    "symptoms": [
+      "black powdery heads",
+      "empty grains",
+      "smutted spikes"
+    ],
+    "causeType": "fungal",
+    "treatment": "Use certified seed; treat seed with recommended systemic fungicide before sowing.",
+    "preventionTips": [
+      "Seed treatment",
+      "Certified seed",
+      "Avoid saved infected seed"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Seed-borne disease seen around heading stage.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Wheat",
+    "diseaseName": "Leaf Blight",
+    "symptoms": [
+      "brown leaf spots",
+      "dry leaf tips",
+      "blighted leaves"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove crop residue; apply balanced nutrients; use approved fungicide if spreading.",
+    "preventionTips": [
+      "Crop rotation",
+      "Clean seed",
+      "Avoid late sowing"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "More common with humid winter fog and residue carryover.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Maize",
+    "diseaseName": "Turcicum Leaf Blight",
+    "symptoms": [
+      "long gray green lesions",
+      "cigar shaped spots",
+      "leaf drying"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected debris; apply mancozeb/propiconazole if severe before tasseling.",
+    "preventionTips": [
+      "Resistant hybrid",
+      "Crop rotation",
+      "Good spacing"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Can reduce yield in humid northern districts.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Maize",
+    "diseaseName": "Common Rust",
+    "symptoms": [
+      "small brown pustules",
+      "rust powder on leaves",
+      "yellowing"
+    ],
+    "causeType": "fungal",
+    "treatment": "Monitor spread; apply suitable fungicide if infection starts early and weather is humid.",
+    "preventionTips": [
+      "Resistant hybrid",
+      "Avoid dense planting",
+      "Field sanitation"
+    ],
+    "severity": "low",
+    "bangladeshContext": "Usually manageable unless infection starts early.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Maize",
+    "diseaseName": "Fall Armyworm",
+    "symptoms": [
+      "ragged leaf holes",
+      "windowpane feeding",
+      "frass in whorl",
+      "cut leaves"
+    ],
+    "causeType": "pest",
+    "treatment": "Handpick larvae early; use whorl sand/ash method; apply recommended bio/insecticide if threshold crossed.",
+    "preventionTips": [
+      "Regular scouting",
+      "Pheromone traps",
+      "Destroy infested whorls"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Major maize pest in Bangladesh; early scouting is critical.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Potato",
+    "diseaseName": "Late Blight",
+    "symptoms": [
+      "water soaked spots",
+      "brown black lesions",
+      "white mold under leaves"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected plants; avoid overhead irrigation; apply protective fungicide quickly.",
+    "preventionTips": [
+      "Use clean seed tuber",
+      "Good drainage",
+      "Preventive spray in cool humid weather"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Severe in cool humid winter, especially after fog or rain.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Potato",
+    "diseaseName": "Early Blight",
+    "symptoms": [
+      "concentric ring spots",
+      "brown leaf spots",
+      "lower leaves yellow"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected lower leaves; improve nutrition; apply mancozeb/chlorothalonil if spreading.",
+    "preventionTips": [
+      "Crop rotation",
+      "Balanced fertilizer",
+      "Avoid water stress"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in older potato leaves during winter.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Potato",
+    "diseaseName": "Bacterial Wilt",
+    "symptoms": [
+      "sudden wilting",
+      "brown vascular ring",
+      "plants collapse"
+    ],
+    "causeType": "bacterial",
+    "treatment": "Remove infected plants with soil; avoid moving contaminated soil; rotate with non-host crops.",
+    "preventionTips": [
+      "Use disease-free seed",
+      "Improve drainage",
+      "Long crop rotation"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Important in warmer or poorly drained potato fields.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Tomato",
+    "diseaseName": "Early Blight",
+    "symptoms": [
+      "target like leaf spots",
+      "yellow lower leaves",
+      "leaf drop"
+    ],
+    "causeType": "fungal",
+    "treatment": "Prune lower infected leaves; mulch soil; apply approved fungicide if disease is spreading.",
+    "preventionTips": [
+      "Stake plants",
+      "Avoid soil splash",
+      "Crop rotation"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in humid vegetable gardens.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Tomato",
+    "diseaseName": "Late Blight",
+    "symptoms": [
+      "water soaked leaf spots",
+      "dark stem lesions",
+      "white mold",
+      "fruit rot"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected parts; avoid overhead watering; apply preventive fungicide urgently.",
+    "preventionTips": [
+      "Good airflow",
+      "Clean seedlings",
+      "Avoid wet foliage"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Can spread very fast in cool wet conditions.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Tomato",
+    "diseaseName": "Tomato Yellow Leaf Curl Virus",
+    "symptoms": [
+      "yellow curled leaves",
+      "stunted plant",
+      "small leaves",
+      "poor fruit set"
+    ],
+    "causeType": "viral",
+    "treatment": "Remove infected plants; control whitefly using yellow traps and recommended IPM.",
+    "preventionTips": [
+      "Use netting",
+      "Whitefly control",
+      "Resistant variety"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Whitefly-transmitted and common in warm vegetable areas.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Tomato",
+    "diseaseName": "Bacterial Wilt",
+    "symptoms": [
+      "sudden wilt",
+      "green leaves wilt",
+      "brown stem inside"
+    ],
+    "causeType": "bacterial",
+    "treatment": "Remove infected plants; solarize soil where possible; rotate away from solanaceous crops.",
+    "preventionTips": [
+      "Raised beds",
+      "Clean seedlings",
+      "Crop rotation"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Often severe in warm moist soils.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Tomato",
+    "diseaseName": "Fruit Borer",
+    "symptoms": [
+      "holes in fruit",
+      "larvae inside fruit",
+      "fruit rotting"
+    ],
+    "causeType": "pest",
+    "treatment": "Collect damaged fruits; use pheromone traps; apply recommended bio-pesticide such as Bt early.",
+    "preventionTips": [
+      "Pheromone traps",
+      "Remove infested fruits",
+      "Netting"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in tomato and brinjal fields.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Brinjal",
+    "diseaseName": "Phomopsis Blight",
+    "symptoms": [
+      "leaf spots",
+      "stem canker",
+      "fruit rot with sunken spots"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected fruits and stems; improve spacing; apply recommended fungicide if needed.",
+    "preventionTips": [
+      "Use clean seed",
+      "Stake plants",
+      "Field sanitation"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Important brinjal disease in humid areas.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Brinjal",
+    "diseaseName": "Shoot and Fruit Borer",
+    "symptoms": [
+      "drooping shoots",
+      "holes in fruit",
+      "larvae in shoot",
+      "frass"
+    ],
+    "causeType": "pest",
+    "treatment": "Cut and destroy bored shoots/fruits; use pheromone traps; apply IPM-based control.",
+    "preventionTips": [
+      "Pheromone traps",
+      "Weekly sanitation",
+      "Avoid indiscriminate spraying"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Major brinjal pest across Bangladesh.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Chili",
+    "diseaseName": "Anthracnose",
+    "symptoms": [
+      "sunken dark fruit spots",
+      "black dots on fruit",
+      "fruit rot"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected fruits; avoid overhead watering; apply recommended fungicide during fruiting if spreading.",
+    "preventionTips": [
+      "Clean seed",
+      "Mulching",
+      "Good spacing"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Very common during humid/rainy periods.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Chili",
+    "diseaseName": "Leaf Curl Virus",
+    "symptoms": [
+      "upward leaf curling",
+      "small leaves",
+      "stunted plant",
+      "yellowing"
+    ],
+    "causeType": "viral",
+    "treatment": "Remove infected plants; control whitefly and thrips with IPM methods.",
+    "preventionTips": [
+      "Use healthy seedlings",
+      "Yellow sticky traps",
+      "Control vectors"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Vector pressure is high in warm dry periods.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Chili",
+    "diseaseName": "Damping Off",
+    "symptoms": [
+      "seedlings collapse",
+      "stem rot at soil line",
+      "poor germination"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove affected seedlings; improve drainage; treat nursery media with approved fungicide/biocontrol.",
+    "preventionTips": [
+      "Raised nursery bed",
+      "Avoid overwatering",
+      "Sterile media"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in wet nurseries with poor drainage.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Onion",
+    "diseaseName": "Purple Blotch",
+    "symptoms": [
+      "purple brown leaf spots",
+      "yellowing leaf tips",
+      "leaf drying"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected leaves; reduce overhead irrigation; apply mancozeb/tebuconazole if severe.",
+    "preventionTips": [
+      "Good spacing",
+      "Field sanitation",
+      "Balanced fertilizer"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in humid winter onion fields.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Onion",
+    "diseaseName": "Thrips Damage",
+    "symptoms": [
+      "silver streaks on leaves",
+      "leaf curling",
+      "tiny insects",
+      "dry tips"
+    ],
+    "causeType": "pest",
+    "treatment": "Use blue/yellow sticky traps; spray water to reduce thrips; apply recommended insecticide if severe.",
+    "preventionTips": [
+      "Mulch",
+      "Avoid drought stress",
+      "Regular scouting"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Thrips increase in dry weather and can reduce bulb size.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Cucumber",
+    "diseaseName": "Downy Mildew",
+    "symptoms": [
+      "yellow angular leaf spots",
+      "gray mold under leaves",
+      "leaf drying"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected leaves; improve airflow; apply approved fungicide if weather remains humid.",
+    "preventionTips": [
+      "Avoid overhead watering",
+      "Good spacing",
+      "Resistant variety"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in cucurbit fields during humid weather.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Cucumber",
+    "diseaseName": "Powdery Mildew",
+    "symptoms": [
+      "white powder on leaves",
+      "yellowing",
+      "leaf drying"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove affected leaves; avoid dense canopy; apply sulfur or recommended fungicide if spreading.",
+    "preventionTips": [
+      "Good airflow",
+      "Balanced fertilizer",
+      "Resistant variety"
+    ],
+    "severity": "low",
+    "bangladeshContext": "Often appears in dry warm periods with high humidity at night.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Cucumber",
+    "diseaseName": "Mosaic Virus",
+    "symptoms": [
+      "mottled leaves",
+      "distorted leaves",
+      "stunted vines",
+      "poor fruit"
+    ],
+    "causeType": "viral",
+    "treatment": "Remove infected plants; control aphids; use reflective mulch if available.",
+    "preventionTips": [
+      "Healthy seedlings",
+      "Aphid control",
+      "Remove weeds"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Aphid-transmitted; can affect many cucurbits.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Jute",
+    "diseaseName": "Stem Rot",
+    "symptoms": [
+      "dark stem lesions",
+      "plant wilting",
+      "stem breaks"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected plants; improve drainage; avoid dense sowing.",
+    "preventionTips": [
+      "Seed treatment",
+      "Crop rotation",
+      "Field sanitation"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in wet jute fields during monsoon.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Jute",
+    "diseaseName": "Root Rot",
+    "symptoms": [
+      "yellowing",
+      "wilting",
+      "rotted roots",
+      "poor stand"
+    ],
+    "causeType": "fungal",
+    "treatment": "Improve drainage; remove affected plants; use seed treatment in next sowing.",
+    "preventionTips": [
+      "Raised seedbed",
+      "Avoid waterlogging",
+      "Clean seed"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Risk increases with waterlogging.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Mustard",
+    "diseaseName": "Alternaria Blight",
+    "symptoms": [
+      "black brown leaf spots",
+      "concentric rings",
+      "pod spots"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected debris; apply recommended fungicide if infection appears before flowering.",
+    "preventionTips": [
+      "Crop rotation",
+      "Clean seed",
+      "Balanced fertilizer"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common in cool humid mustard season.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Mustard",
+    "diseaseName": "Aphid Attack",
+    "symptoms": [
+      "clusters of green insects",
+      "curling leaves",
+      "sticky honeydew",
+      "poor pods"
+    ],
+    "causeType": "pest",
+    "treatment": "Spray strong water stream early; conserve ladybirds; apply recommended insecticide if heavy infestation.",
+    "preventionTips": [
+      "Early scouting",
+      "Avoid excess nitrogen",
+      "Use yellow traps"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Mustard aphids are common in winter.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Banana",
+    "diseaseName": "Panama Wilt",
+    "symptoms": [
+      "yellowing older leaves",
+      "wilting",
+      "split pseudostem",
+      "brown vascular tissue"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove infected plant safely; avoid moving soil; plant tolerant varieties where available.",
+    "preventionTips": [
+      "Disease-free suckers",
+      "Improve drainage",
+      "Sanitize tools"
+    ],
+    "severity": "high",
+    "bangladeshContext": "Soil-borne and difficult to control once established.",
+    "escalateToAgronomist": true
+  },
+  {
+    "cropName": "Banana",
+    "diseaseName": "Sigatoka Leaf Spot",
+    "symptoms": [
+      "streaks on leaves",
+      "brown leaf spots",
+      "leaf drying",
+      "reduced bunch size"
+    ],
+    "causeType": "fungal",
+    "treatment": "Remove badly infected leaves; improve spacing; apply recommended fungicide in severe cases.",
+    "preventionTips": [
+      "Good spacing",
+      "Field sanitation",
+      "Balanced nutrition"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Favored by humid weather and dense plantations.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Mango",
+    "diseaseName": "Anthracnose",
+    "symptoms": [
+      "black spots on leaves",
+      "flower blight",
+      "fruit spots",
+      "fruit rot"
+    ],
+    "causeType": "fungal",
+    "treatment": "Prune infected twigs; improve canopy airflow; apply copper/mancozeb before flowering if needed.",
+    "preventionTips": [
+      "Pruning",
+      "Orchard sanitation",
+      "Avoid overhead irrigation"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Common during humid flowering and fruiting periods.",
+    "escalateToAgronomist": false
+  },
+  {
+    "cropName": "Mango",
+    "diseaseName": "Hopper Attack",
+    "symptoms": [
+      "flower drying",
+      "sticky honeydew",
+      "sooty mold",
+      "tiny hopping insects"
+    ],
+    "causeType": "pest",
+    "treatment": "Monitor panicles; conserve natural enemies; apply recommended insecticide only at threshold.",
+    "preventionTips": [
+      "Orchard sanitation",
+      "Avoid dense canopy",
+      "Timely scouting"
+    ],
+    "severity": "medium",
+    "bangladeshContext": "Important during mango flowering season.",
+    "escalateToAgronomist": false
+  }
+]
