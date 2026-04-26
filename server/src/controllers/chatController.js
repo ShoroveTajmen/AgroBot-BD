@@ -5,6 +5,10 @@ export const chat = async (req, res) => {
   try {
     const { sessionId, message } = req.body;
 
+    console.log('\n=== CHAT CONTROLLER ===');
+    console.log('Session ID:', sessionId || 'new');
+    console.log('User message:', message);
+
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -13,12 +17,12 @@ export const chat = async (req, res) => {
     let session;
     if (sessionId) {
       session = await Session.findById(sessionId);
-    }
-    
-    if (!session) {
+      console.log('Found existing session');
+    } else {
       session = await Session.create({
         messages: []
       });
+      console.log('Created new session');
     }
 
     // Add user message to session
@@ -29,6 +33,7 @@ export const chat = async (req, res) => {
     });
 
     // Get AI response
+    console.log('→ Processing with advisory agent...');
     const aiResponse = await advisoryAgent.processMessage(message, session);
 
     // Add AI response to session
@@ -40,6 +45,9 @@ export const chat = async (req, res) => {
     });
 
     await session.save();
+    console.log('Session saved');
+
+    console.log('=== END CHAT CONTROLLER ===\n');
 
     res.json({
       sessionId: session._id,

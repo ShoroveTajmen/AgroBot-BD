@@ -3,6 +3,8 @@
 
 export const weatherTool = {
   async getWeather(location) {
+    console.log(`  → Weather Tool: Getting weather for "${location}"`);
+    
     // For MVP, return mock weather data based on location
     // In production, call a real weather API
     
@@ -21,6 +23,7 @@ export const weatherTool = {
     const weather = mockWeatherData[normalizedLocation];
 
     if (weather) {
+      console.log(`    ✓ Weather data retrieved: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.condition}`);
       return {
         location: location,
         temperature: weather.temperature,
@@ -31,6 +34,7 @@ export const weatherTool = {
       };
     }
 
+    console.log(`    ✗ Weather data not available for ${location}`);
     // Default weather data if location not found
     return {
       location: location,

@@ -7,6 +7,11 @@ import mongoose from 'mongoose';
 // Load environment variables FIRST
 dotenv.config();
 
+console.log('\n=== SERVER STARTUP ===');
+console.log('Loading environment variables...');
+console.log(`OpenAI API Key: ${process.env.OPENAI_API_KEY ? '✓ Loaded' : '✗ Missing'}`);
+console.log(`MongoDB URI: ${process.env.MONGODB_URI ? '✓ Loaded' : '✗ Missing'}`);
+
 // Import routes (this will import controllers which import agent)
 import apiRoutes from './routes/api.js';
 
@@ -51,6 +56,7 @@ const connectDB = async () => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log('=== SERVER READY ===\n');
     });
   } catch (error) {
     console.error('MongoDB connection error:', error);

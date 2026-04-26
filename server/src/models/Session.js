@@ -34,6 +34,7 @@ const sessionSchema = new mongoose.Schema({
 // Update timestamp on save
 sessionSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  console.log(`  → Session saved: ${this._id} (${this.messages.length} messages)`);
   next();
 });
 

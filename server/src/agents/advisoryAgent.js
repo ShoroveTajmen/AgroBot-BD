@@ -18,6 +18,9 @@ const getOpenAI = () => {
 export const advisoryAgent = {
   async processMessage(userMessage, session) {
     try {
+      console.log('\n=== AGENT PROCESSING ===');
+      console.log('User message:', userMessage);
+
       // Build conversation history
       const conversationHistory = session.messages
         .map(msg => `${msg.role === 'user' ? 'Farmer' : 'AgroBot'}: ${msg.content}`)
@@ -27,6 +30,7 @@ export const advisoryAgent = {
       const needsFollowUp = await this.checkNeedsFollowUp(userMessage, conversationHistory);
       
       if (needsFollowUp) {
+        console.log('→ Follow-up questions needed');
         const followUpQuestions = await this.getFollowUpQuestions(userMessage, conversationHistory);
         return {
           content: followUpQuestions,
@@ -36,15 +40,20 @@ export const advisoryAgent = {
 
       // Extract context from conversation
       const context = this.extractContext(conversationHistory);
+      console.log('Extracted context:', context);
 
       // Use tools if we have enough context
       const toolResults = await this.runTools(context);
+      console.log('Tool results:', toolResults);
 
       // Generate advisory
       const advisory = await this.generateAdvisory(userMessage, context, toolResults);
+      console.log('Generated advisory:', advisory.likelyDisease);
 
       // Format response
       const response = this.formatAdvisory(advisory);
+
+      console.log('=== END AGENT PROCESSING ===\n');
 
       return {
         content: response,
@@ -71,6 +80,7 @@ export const advisoryAgent = {
       });
 
       const answer = response.choices[0].message.content.toLowerCase();
+      console.log('Follow-up check result:', answer);
       return answer.includes('yes') || answer.includes('need more');
     } catch (error) {
       console.error('Follow-up check error:', error);
@@ -140,22 +150,32 @@ export const advisoryAgent = {
   async runTools(context) {
     const results = {};
 
+    console.log('→ Running tools...');
+
     // Run crop knowledge tool if we have crop and symptoms
     if (context.crop && context.symptoms.length > 0) {
+      console.log(`  → Crop Knowledge Tool: Searching for "${context.crop}" with symptoms: ${context.symptoms.join(', ')}`);
       try {
         results.cropKnowledge = cropKnowledgeTool.searchDiseases(context.crop, context.symptoms);
+        console.log(`    ✓ Found ${results.cropKnowledge.totalMatches} matching diseases`);
       } catch (error) {
-        console.error('Crop knowledge tool error:', error);
+        console.error('  ✗ Crop knowledge tool error:', error);
       }
+    } else {
+      console.log('  → Crop Knowledge Tool: Skipped (no crop/symptoms)');
     }
 
     // Run weather tool if we have location
     if (context.location) {
+      console.log(`  → Weather Tool: Getting weather for "${context.location}"`);
       try {
         results.weather = await weatherTool.getWeather(context.location);
+        console.log(`    ✓ Weather data retrieved: ${results.weather.temperature}°C, ${results.weather.humidity}% humidity`);
       } catch (error) {
-        console.error('Weather tool error:', error);
+        console.error('  ✗ Weather tool error:', error);
       }
+    } else {
+      console.log('  → Weather Tool: Skipped (no location)');
     }
 
     return results;

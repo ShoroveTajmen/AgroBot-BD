@@ -2,9 +2,13 @@ import { Session } from '../models/Session.js';
 
 export const getSessions = async (req, res) => {
   try {
+    console.log('\n=== GET SESSIONS ===');
     const sessions = await Session.find()
       .sort({ createdAt: -1 })
       .limit(50);
+    
+    console.log(`Found ${sessions.length} sessions`);
+    console.log('=== END GET SESSIONS ===\n');
     
     res.json({
       sessions: sessions.map(s => ({
@@ -21,9 +25,13 @@ export const getSessions = async (req, res) => {
 
 export const createSession = async (req, res) => {
   try {
+    console.log('\n=== CREATE SESSION ===');
     const session = await Session.create({
       messages: []
     });
+    
+    console.log(`Created session: ${session._id}`);
+    console.log('=== END CREATE SESSION ===\n');
     
     res.status(201).json({
       sessionId: session._id,

@@ -1,14 +1,18 @@
 export const escalationTool = {
   shouldEscalate(advisory) {
+    console.log('  → Escalation Tool: Checking if escalation is needed');
+    
     // Escalate if any of these conditions are met:
     
     // 1. Disease is marked as high severity
     if (advisory.severity === 'high') {
+      console.log('    ✓ Escalation: High severity disease detected');
       return true;
     }
     
     // 2. Confidence is low (less than 50%)
     if (advisory.confidence === 'Low' || advisory.confidence === 'Low') {
+      console.log('    ✓ Escalation: Low confidence in diagnosis');
       return true;
     }
     
@@ -19,6 +23,7 @@ export const escalationTool = {
     ).length || 0;
     
     if (symptomCount >= 2) {
+      console.log(`    ✓ Escalation: ${symptomCount} high-severity symptoms detected`);
       return true;
     }
     
@@ -26,15 +31,18 @@ export const escalationTool = {
     if (advisory.matchedDiseases && advisory.matchedDiseases.length > 1) {
       const topScores = advisory.matchedDiseases.slice(0, 2).map(d => d.matchScore);
       if (topScores[0] - topScores[1] < 2) { // Small score difference
+        console.log('    ✓ Escalation: Uncertain diagnosis (similar scores)');
         return true;
       }
     }
     
     // 5. Viral or bacterial diseases (harder to diagnose visually)
     if (advisory.causeType === 'viral' || advisory.causeType === 'bacterial') {
+      console.log(`    ✓ Escalation: ${advisory.causeType} disease requires lab confirmation`);
       return true;
     }
     
+    console.log('    ✗ No escalation needed');
     return false;
   },
 

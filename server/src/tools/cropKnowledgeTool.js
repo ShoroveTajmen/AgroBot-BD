@@ -12,13 +12,16 @@ let cropDiseases = [];
 try {
   const data = fs.readFileSync(cropDiseasesPath, 'utf8');
   cropDiseases = JSON.parse(data);
+  console.log(`✓ Crop Knowledge Tool: Loaded ${cropDiseases.length} crop diseases from dataset`);
 } catch (error) {
-  console.error('Error loading crop diseases dataset:', error);
+  console.error('✗ Error loading crop diseases dataset:', error);
   cropDiseases = [];
 }
 
 export const cropKnowledgeTool = {
   searchDiseases(cropName, symptoms) {
+    console.log(`  → Crop Knowledge Tool: Searching for "${cropName}" with symptoms: ${symptoms.join(', ')}`);
+    
     // Normalize crop name
     const normalizedCrop = cropName.toLowerCase().trim();
     
@@ -28,11 +31,14 @@ export const cropKnowledgeTool = {
     );
 
     if (relevantDiseases.length === 0) {
+      console.log(`    ✗ No disease data found for ${cropName}`);
       return {
         message: `No disease data found for ${cropName}`,
         diseases: []
       };
     }
+
+    console.log(`    ✓ Found ${relevantDiseases.length} diseases for ${cropName}`);
 
     // Score diseases based on symptom matching
     const scoredDiseases = relevantDiseases.map(disease => {
@@ -66,6 +72,8 @@ export const cropKnowledgeTool = {
     scoredDiseases.sort((a, b) => b.matchScore - a.matchScore);
     
     const topMatches = scoredDiseases.slice(0, 5).filter(d => d.matchScore > 0);
+    
+    console.log(`    ✓ Top matches: ${topMatches.map(d => `${d.diseaseName} (${d.matchScore})`).join(', ')}`);
 
     return {
       crop: cropName,
