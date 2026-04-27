@@ -1,26 +1,12 @@
 import express from 'express';
-import { chat } from '../controllers/chatController.js';
-import { getSessions, createSession } from '../controllers/sessionController.js';
+import { chat, getConversations, getConversation } from '../controllers/chatController.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-console.log('Routes loaded');
-
-// Chat endpoint
-router.post('/chat', (req, res) => {
-  console.log(`[POST /api/chat] ${req.body.message?.substring(0, 50)}...`);
-  chat(req, res);
-});
-
-// Session endpoints
-router.get('/sessions', (req, res) => {
-  console.log('[GET /api/sessions]');
-  getSessions(req, res);
-});
-
-router.post('/sessions', (req, res) => {
-  console.log('[POST /api/sessions]');
-  createSession(req, res);
-});
+// All chat routes require authentication
+router.post('/chat', authenticate, chat);
+router.get('/conversations', authenticate, getConversations);
+router.get('/conversations/:id', authenticate, getConversation);
 
 export default router;

@@ -1,63 +1,81 @@
 import { advisoryAgent } from '../agents/advisoryAgent.js';
-import { Session } from '../models/Session.js';
+import { Conversation } from '../models/Conversation.js';
 
+// POST /api/chat  — send a message (auth required)
 export const chat = async (req, res) => {
   try {
-    const { sessionId, message } = req.body;
+    const { conversationId, message } = req.body;
+    const userId = req.user._id;
 
     console.log('\n=== CHAT CONTROLLER ===');
-    console.log('Session ID:', sessionId || 'new');
-    console.log('User message:', message);
+    console.log('User:', userId, '| Message:', message);
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
-    }
+    if (!message) return res.status(400).json({ error: 'Message is required' });
 
-    // Get or create session
-    let session;
-    if (sessionId) {
-      session = await Session.findById(sessionId);
-      console.log('Found existing session');
+    // Get or create conversation for this user
+    let conversation;
+    if (conversationId) {
+      conversation = await Conversation.findOne({ _id: conversationId, userId });
+      if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
     } else {
-      session = await Session.create({
-        messages: []
-      });
-      console.log('Created new session');
+      conversation = await Conversation.create({ userId, messages: [] });
+      console.log('✓ New conversation:', conversation._id);
     }
 
-    // Add user message to session
-    session.messages.push({
-      role: 'user',
-      content: message,
-      timestamp: new Date()
-    });
+    // Add user message
+    conversation.messages.push({ role: 'user', content: message });
 
-    // Get AI response
-    console.log('→ Processing with advisory agent...');
-    const aiResponse = await advisoryAgent.processMessage(message, session);
+    // Run advisory agent (same logic as before — agent receives session-like object)
+    const aiResponse = await advisoryAgent.processMessage(message, conversation);
 
-    // Add AI response to session
-    session.messages.push({
+    // Add AI response
+    conversation.messages.push({
       role: 'assistant',
       content: aiResponse.content,
-      advisory: aiResponse.advisory,
-      timestamp: new Date()
+      advisory: aiResponse.advisory || null
     });
 
-    await session.save();
-    console.log('Session saved');
-
+    await conversation.save();
+    console.log('✓ Saved. Messages:', conversation.messages.length);
     console.log('=== END CHAT CONTROLLER ===\n');
 
     res.json({
-      sessionId: session._id,
-      response: {
-        content: aiResponse.content,
-        advisory: aiResponse.advisory
-      }
+      conversationId: conversation._id,
+      response: { content: aiResponse.content, advisory: aiResponse.advisory }
     });
-  } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error('Chat error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/conversations  — list user's conversations
+export const getConversations = async (req, res) => {
+  try {
+    const conversations = await Conversation.find({ userId: req.user._id })
+      .sort({ updatedAt: -1 })
+      .limit(20)
+      .select('_id updatedAt messages');
+
+    res.json({
+      conversations: conversations.map(c => ({
+        _id: c._id,
+        messageCount: c.messages.length,
+        updatedAt: c.updatedAt
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/conversations/:id  — get full conversation history
+export const getConversation = async (req, res) => {
+  try {
+    const conversation = await Conversation.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+    res.json({ conversation });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
