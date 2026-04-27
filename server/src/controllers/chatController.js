@@ -18,7 +18,9 @@ export const chat = async (req, res) => {
       conversation = await Conversation.findOne({ _id: conversationId, userId });
       if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
     } else {
-      conversation = await Conversation.create({ userId, messages: [] });
+      // Generate title from first message (truncate to 50 chars)
+      const title = message.length > 50 ? message.substring(0, 47) + '...' : message;
+      conversation = await Conversation.create({ userId, title, messages: [] });
       console.log('✓ New conversation:', conversation._id);
     }
 
@@ -55,12 +57,14 @@ export const getConversations = async (req, res) => {
     const conversations = await Conversation.find({ userId: req.user._id })
       .sort({ updatedAt: -1 })
       .limit(20)
-      .select('_id updatedAt messages');
+      .select('_id title updatedAt messages');
 
     res.json({
       conversations: conversations.map(c => ({
         _id: c._id,
+        title: c.title,
         messageCount: c.messages.length,
+        lastMessage: c.messages.length > 0 ? c.messages[c.messages.length - 1].content.substring(0, 60) : '',
         updatedAt: c.updatedAt
       }))
     });
@@ -75,6 +79,17 @@ export const getConversation = async (req, res) => {
     const conversation = await Conversation.findOne({ _id: req.params.id, userId: req.user._id });
     if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
     res.json({ conversation });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE /api/conversations/:id  — delete a conversation
+export const deleteConversation = async (req, res) => {
+  try {
+    const conversation = await Conversation.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+    res.json({ message: 'Conversation deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

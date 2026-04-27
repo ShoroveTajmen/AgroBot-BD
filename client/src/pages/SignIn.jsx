@@ -27,11 +27,27 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(160deg, #f0f7f0 0%, #e8f5e9 60%, #f5fff5 100%)' }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background Image with Blur */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: 'url(/agroBot_BG.png)',
+          filter: 'blur(3px)',
+          transform: 'scale(1.1)'
+        }}
+      />
+      
+      {/* Gradient Overlay for smooth transition to white */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 40%, rgba(255,255,255,0.95) 70%, rgba(255,255,255,1) 100%)'
+        }}
+      />
 
       {/* Header */}
-      <header className="flex justify-between items-center px-6 py-4">
+      <header className="relative z-10 flex justify-between items-center px-6 py-4">
         <div className="flex items-center gap-2 font-bold text-[#1a4d1a]">
           <img src="/agro_icon.png" alt="AgroBot BD" className="w-8 h-8 rounded-full" />
           AgroBot BD
@@ -40,13 +56,14 @@ export default function SignIn() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 pb-6">
-        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-6">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 w-full max-w-md border border-white/50">
 
           {/* Logo */}
           <div className="flex justify-center mb-4">
-            <img src="/agro_icon.png" alt="AgroBot"
-              className="w-16 h-16 rounded-full border-4 border-[#c8e6c9] bg-[#e8f5e9] p-1" />
+            <div className="w-20 h-20 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-[#c8e6c9]">
+              <img src="/agro_icon.png" alt="AgroBot" className="w-16 h-16 rounded-full" />
+            </div>
           </div>
 
           <h1 className="text-center text-2xl font-bold text-[#1a4d1a] mb-1">Welcome Back</h1>
@@ -63,8 +80,11 @@ export default function SignIn() {
             {/* Email */}
             <div>
               <label className="block text-xs font-bold tracking-widest text-gray-500 mb-1 uppercase">Email Address</label>
-              <div className="flex items-center bg-gray-100 border border-gray-200 rounded-lg px-3 focus-within:border-[#2d6a2d] focus-within:bg-white transition">
-                <span className="text-gray-400 mr-2">✉</span>
+              <div className="flex items-center bg-[#e8f0e8] border border-[#d0e0d0] rounded-lg px-3 focus-within:border-[#2d6a2d] focus-within:bg-white transition">
+                <svg className="w-5 h-5 mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="2" fill="#a8d5a8" stroke="#1a4d1a" strokeWidth="2"/>
+                  <path d="M3 7l9 6 9-6" stroke="#1a4d1a" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
                 <input
                   type="email"
                   value={email}
@@ -72,6 +92,10 @@ export default function SignIn() {
                   placeholder="e.g. name@example.com"
                   required
                   className="flex-1 bg-transparent py-3 text-sm outline-none text-gray-800 placeholder-gray-400"
+                  style={{
+                    WebkitBoxShadow: '0 0 0 1000px #e8f0e8 inset',
+                    WebkitTextFillColor: '#1f2937'
+                  }}
                 />
               </div>
             </div>
@@ -82,8 +106,12 @@ export default function SignIn() {
                 <label className="text-xs font-bold tracking-widest text-gray-500 uppercase">Password</label>
                 <a href="#" className="text-xs text-[#2d6a2d] hover:underline">Forgot Password?</a>
               </div>
-              <div className="flex items-center bg-gray-100 border border-gray-200 rounded-lg px-3 focus-within:border-[#2d6a2d] focus-within:bg-white transition">
-                <span className="text-gray-400 mr-2">🔒</span>
+              <div className="flex items-center bg-[#e8f0e8] border border-[#d0e0d0] rounded-lg px-3 focus-within:border-[#2d6a2d] focus-within:bg-white transition">
+                <svg className="w-5 h-5 mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2" fill="#fed7aa" stroke="#f97316" strokeWidth="2"/>
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="16" r="1.5" fill="#f97316"/>
+                </svg>
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={password}
@@ -91,9 +119,13 @@ export default function SignIn() {
                   placeholder="••••••••"
                   required
                   className="flex-1 bg-transparent py-3 text-sm outline-none text-gray-800 placeholder-gray-400"
+                  style={{
+                    WebkitBoxShadow: '0 0 0 1000px #e8f0e8 inset',
+                    WebkitTextFillColor: '#1f2937'
+                  }}
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)}
-                  className="text-gray-400 text-sm ml-1">
+                  className="text-gray-500 text-sm ml-1">
                   {showPw ? '🙈' : '👁'}
                 </button>
               </div>
@@ -111,7 +143,7 @@ export default function SignIn() {
               disabled={loading}
               className="w-full py-3 bg-[#1a4d1a] text-white rounded-lg font-semibold text-sm hover:bg-[#2d6a2d] transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Login →'}
+              {loading ? 'Signing in...' : 'Sign In →'}
             </button>
           </form>
         </div>
@@ -123,7 +155,7 @@ export default function SignIn() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-gray-400 pb-4">
+      <footer className="relative z-10 text-center text-xs text-gray-600 pb-4 bg-white/80">
         <a href="#" className="hover:underline">Privacy Policy</a> &bull; <a href="#" className="hover:underline">Terms of Service</a>
         <p className="mt-1">© 2024 AgroBot BD. Empowering Bangladeshi agriculture with AI solutions.</p>
       </footer>
