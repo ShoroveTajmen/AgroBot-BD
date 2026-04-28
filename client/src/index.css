@@ -8,6 +8,23 @@ body {
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
+/* Remove autofill blue/white background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #e8f0e8 inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #374151 inset !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Typing animation */
 @keyframes bounce {
   0%, 60%, 100% { transform: translateY(0); }
