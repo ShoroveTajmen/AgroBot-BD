@@ -2,251 +2,266 @@ import { OpenAI } from 'openai';
 import { cropKnowledgeTool } from '../tools/cropKnowledgeTool.js';
 import { weatherTool } from '../tools/weatherTool.js';
 import { escalationTool } from '../tools/escalationTool.js';
-import { getSystemPrompt, getFollowUpPrompt } from '../prompts/systemPrompts.js';
 
 let openai = null;
 
 const getOpenAI = () => {
   if (!openai) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
   return openai;
 };
 
+// ── Tool definitions for OpenAI function calling ──────────────────────────────
+const TOOL_DEFINITIONS = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_crop_diseases',
+      description: 'Search the crop disease database for diseases matching the given crop and symptoms. Use this when the farmer mentions a specific crop and describes symptoms.',
+      parameters: {
+        type: 'object',
+        properties: {
+          crop: {
+            type: 'string',
+            description: 'The crop name e.g. rice, wheat, maize, potato, tomato, brinjal, chili, onion, cucumber, jute, mustard, banana, mango'
+          },
+          symptoms: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of symptoms described by the farmer e.g. ["brown spots", "yellow leaves", "wilting"]'
+          }
+        },
+        required: ['crop', 'symptoms']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get current weather data for a Bangladesh district. Use this when the farmer mentions their location or when weather context would help diagnose the problem.',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: {
+            type: 'string',
+            description: 'Bangladesh district name e.g. Dhaka, Chittagong, Rajshahi, Khulna, Barisal, Sylhet, Rangpur, Mymensingh'
+          }
+        },
+        required: ['location']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_escalation',
+      description: 'Check if the diagnosed disease requires escalation to a professional agronomist. Use this after identifying a likely disease.',
+      parameters: {
+        type: 'object',
+        properties: {
+          likelyDisease: { type: 'string', description: 'Name of the diagnosed disease' },
+          confidence: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Confidence level of the diagnosis' },
+          causeType: { type: 'string', enum: ['fungal', 'bacterial', 'viral', 'pest'], description: 'Type of disease cause' },
+          severity: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Severity of the disease' },
+          recommendedActions: { type: 'array', items: { type: 'string' }, description: 'List of recommended actions' }
+        },
+        required: ['likelyDisease', 'confidence', 'causeType', 'severity']
+      }
+    }
+  }
+];
+
+// ── Tool executor: maps function name → actual tool call ──────────────────────
+async function executeTool(name, args) {
+  console.log(`  🔧 Executing tool: ${name}`, args);
+
+  switch (name) {
+    case 'search_crop_diseases': {
+      const result = cropKnowledgeTool.searchDiseases(args.crop, args.symptoms);
+      console.log(`    ✓ Found ${result.totalMatches ?? 0} matching diseases`);
+      return JSON.stringify(result);
+    }
+
+    case 'get_weather': {
+      const result = await weatherTool.getWeather(args.location);
+      console.log(`    ✓ Weather: ${result.temperature}°C, ${result.humidity}% humidity`);
+      return JSON.stringify(result);
+    }
+
+    case 'check_escalation': {
+      const shouldEscalate = escalationTool.shouldEscalate(args);
+      console.log(`    ✓ Escalation needed: ${shouldEscalate}`);
+      return JSON.stringify({ escalateToAgronomist: shouldEscalate });
+    }
+
+    default:
+      return JSON.stringify({ error: `Unknown tool: ${name}` });
+  }
+}
+
+// ── System prompt for the agentic agent ──────────────────────────────────────
+const SYSTEM_PROMPT = `You are AgroBot, an expert agricultural advisory AI for Bangladeshi farmers.
+
+Your goal is to diagnose crop problems and provide practical advice.
+
+## How to respond:
+
+1. **If the farmer's message is vague** (no crop or symptoms mentioned):
+   - Ask 2-3 specific follow-up questions directly in your response
+   - Do NOT call any tools yet
+
+2. **If crop and symptoms are mentioned**:
+   - Call search_crop_diseases tool first
+   - If location is mentioned, also call get_weather tool
+   - After getting disease results, call check_escalation tool
+   - Then provide your final diagnosis
+
+3. **Final response must include**:
+   - Disease name and confidence
+   - Cause type (fungal/bacterial/viral/pest)
+   - Recommended actions (numbered list)
+   - Prevention tips
+   - Weather impact (if weather data available)
+   - Escalation warning (if needed)
+   - Bangladesh-specific context
+
+## Rules:
+- Always use tools when you have enough information
+- You can call multiple tools in one turn
+- Be concise and practical for farmers
+- Use simple language
+- Always respond in the same language the farmer uses`;
+
+// ── Main agentic agent ────────────────────────────────────────────────────────
 export const advisoryAgent = {
   async processMessage(userMessage, session) {
-    try {
-      console.log('\n=== AGENT PROCESSING ===');
-      console.log('User message:', userMessage);
+    console.log('\n=== AGENTIC PROCESSING ===');
+    console.log('User message:', userMessage);
 
-      // Build conversation history
-      const conversationHistory = session.messages
-        .map(msg => `${msg.role === 'user' ? 'Farmer' : 'AgroBot'}: ${msg.content}`)
-        .join('\n\n');
+    // Build messages array with full conversation history
+    const messages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      // Include previous conversation turns
+      ...session.messages.slice(-10).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
+      // Current user message
+      { role: 'user', content: userMessage }
+    ];
 
-      // Check if we need follow-up questions
-      const needsFollowUp = await this.checkNeedsFollowUp(userMessage, conversationHistory);
-      
-      if (needsFollowUp) {
-        console.log('→ Follow-up questions needed');
-        const followUpQuestions = await this.getFollowUpQuestions(userMessage, conversationHistory);
+    let toolCallCount = 0;
+    const MAX_TOOL_CALLS = 10; // Safety limit to prevent infinite loops
+
+    // ── Agentic loop ──────────────────────────────────────────────────────────
+    while (toolCallCount < MAX_TOOL_CALLS) {
+      console.log(`\n→ Agent loop iteration ${toolCallCount + 1}`);
+
+      const response = await getOpenAI().chat.completions.create({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages,
+        tools: TOOL_DEFINITIONS,
+        tool_choice: 'auto',   // Agent decides whether to call tools
+        temperature: 0.4,
+        max_tokens: 1500
+      });
+
+      const message = response.choices[0].message;
+      const finishReason = response.choices[0].finish_reason;
+
+      console.log(`  Finish reason: ${finishReason}`);
+
+      // Add assistant message to history
+      messages.push(message);
+
+      // ── Agent decided to call tools ───────────────────────────────────────
+      if (finishReason === 'tool_calls' && message.tool_calls?.length > 0) {
+        console.log(`  → Agent requested ${message.tool_calls.length} tool(s)`);
+
+        // Execute ALL requested tools in parallel
+        const toolResults = await Promise.all(
+          message.tool_calls.map(async (toolCall) => {
+            const args = JSON.parse(toolCall.function.arguments);
+            const result = await executeTool(toolCall.function.name, args);
+            return {
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: result
+            };
+          })
+        );
+
+        // Add all tool results back to messages
+        messages.push(...toolResults);
+        toolCallCount += message.tool_calls.length;
+        continue; // Loop again so agent can analyze tool results
+      }
+
+      // ── Agent finished — has a final text response ────────────────────────
+      if (finishReason === 'stop' && message.content) {
+        console.log(`  ✓ Agent finished after ${toolCallCount} tool call(s)`);
+        console.log('=== END AGENTIC PROCESSING ===\n');
+
+        // Parse advisory data from the response for structured UI display
+        const advisory = this.parseAdvisoryFromResponse(message.content);
+
         return {
-          content: followUpQuestions,
-          advisory: null
+          content: message.content,
+          advisory
         };
       }
 
-      // Extract context from conversation
-      const context = this.extractContext(conversationHistory);
-      console.log('Extracted context:', context);
-
-      // Use tools if we have enough context
-      const toolResults = await this.runTools(context);
-      console.log('Tool results:', toolResults);
-
-      // Generate advisory
-      const advisory = await this.generateAdvisory(userMessage, context, toolResults);
-      console.log('Generated advisory:', advisory.likelyDisease);
-
-      // Format response
-      const response = this.formatAdvisory(advisory);
-
-      console.log('=== END AGENT PROCESSING ===\n');
-
-      return {
-        content: response,
-        advisory: advisory
-      };
-    } catch (error) {
-      console.error('Agent error:', error);
-      throw error;
+      // Unexpected finish reason — break to avoid infinite loop
+      console.warn(`  ⚠ Unexpected finish reason: ${finishReason}`);
+      break;
     }
-  },
 
-  async checkNeedsFollowUp(userMessage, conversationHistory) {
-    try {
-      const prompt = getFollowUpPrompt(userMessage, conversationHistory);
-      
-      const response = await getOpenAI().chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are an agricultural assistant. Determine if you need more information from the farmer.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 100
-      });
-
-      const answer = response.choices[0].message.content.toLowerCase();
-      console.log('Follow-up check result:', answer);
-      return answer.includes('yes') || answer.includes('need more');
-    } catch (error) {
-      console.error('Follow-up check error:', error);
-      return false;
-    }
-  },
-
-  async getFollowUpQuestions(userMessage, conversationHistory) {
-    try {
-      const prompt = `Based on this conversation:\n\n${conversationHistory}\n\nUser said: "${userMessage}"\n\nWhat follow-up questions would help you provide better advice? Ask 2-3 specific questions.`;
-      
-      const response = await getOpenAI().chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are an agricultural assistant. Ask clear, simple questions to understand the farmer\'s problem better.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 200
-      });
-
-      return response.choices[0].message.content;
-    } catch (error) {
-      console.error('Follow-up questions error:', error);
-      return 'Could you tell me more about the affected crop and the symptoms you\'re seeing?';
-    }
-  },
-
-  extractContext(conversationHistory) {
-    const context = {
-      symptoms: [],
-      crop: null,
-      location: null,
-      season: null,
-      irrigation: null,
-      duration: null
+    // Fallback if loop exhausted
+    console.warn('⚠ Max tool calls reached, returning last message');
+    const lastMessage = messages[messages.length - 1];
+    return {
+      content: lastMessage.content || 'I was unable to process your request. Please try again.',
+      advisory: null
     };
-
-    // Simple keyword extraction (could be enhanced with NLP)
-    const lines = conversationHistory.toLowerCase().split('\n');
-    
-    for (const line of lines) {
-      if (line.includes('rice') || line.includes('wheat') || line.includes('maize') || 
-          line.includes('potato') || line.includes('tomato') || line.includes('brinjal') ||
-          line.includes('chili') || line.includes('onion') || line.includes('cucumber') ||
-          line.includes('jute') || line.includes('mustard') || line.includes('banana') ||
-          line.includes('mango')) {
-        context.crop = line.match(/(rice|wheat|maize|potato|tomato|brinjal|chili|onion|cucumber|jute|mustard|banana|mango)/)?.[0] || null;
-      }
-      
-      if (line.includes('dhaka') || line.includes('chittagong') || line.includes('rajshahi') ||
-          line.includes('khulna') || line.includes('barisal') || line.includes('sylhet') ||
-          line.includes('rangpur') || line.includes('mymensingh')) {
-        context.location = line.match(/(dhaka|chittagong|rajshahi|khulna|barisal|sylhet|rangpur|mymensingh)/)?.[0] || null;
-      }
-      
-      if (line.includes('brown') || line.includes('yellow') || line.includes('spots') ||
-          line.includes('lesions') || line.includes('wilt') || line.includes('rot') ||
-          line.includes('curl') || line.includes('stunted') || line.includes('holes')) {
-        context.symptoms.push(line);
-      }
-    }
-
-    return context;
   },
 
-  async runTools(context) {
-    const results = {};
+  // ── Parse structured advisory data from the text response ─────────────────
+  // This extracts key fields so the UI can display the advisory card
+  parseAdvisoryFromResponse(content) {
+    if (!content) return null;
 
-    console.log('→ Running tools...');
+    const lower = content.toLowerCase();
 
-    // Run crop knowledge tool if we have crop and symptoms
-    if (context.crop && context.symptoms.length > 0) {
-      console.log(`  → Crop Knowledge Tool: Searching for "${context.crop}" with symptoms: ${context.symptoms.join(', ')}`);
-      try {
-        results.cropKnowledge = cropKnowledgeTool.searchDiseases(context.crop, context.symptoms);
-        console.log(`    ✓ Found ${results.cropKnowledge.totalMatches} matching diseases`);
-      } catch (error) {
-        console.error('  ✗ Crop knowledge tool error:', error);
-      }
-    } else {
-      console.log('  → Crop Knowledge Tool: Skipped (no crop/symptoms)');
-    }
+    // Try to extract disease name
+    const diseaseMatch = content.match(/\*\*?([A-Z][^*\n]+(?:disease|blight|rot|wilt|rust|smut|borer|virus|mildew|spot|blast|burn)[^*\n]*)\*\*?/i)
+      || content.match(/(?:disease|diagnosis|identified)[:\s]+\*?\*?([^\n*]+)/i);
 
-    // Run weather tool if we have location
-    if (context.location) {
-      console.log(`  → Weather Tool: Getting weather for "${context.location}"`);
-      try {
-        results.weather = await weatherTool.getWeather(context.location);
-        console.log(`    ✓ Weather data retrieved: ${results.weather.temperature}°C, ${results.weather.humidity}% humidity`);
-      } catch (error) {
-        console.error('  ✗ Weather tool error:', error);
-      }
-    } else {
-      console.log('  → Weather Tool: Skipped (no location)');
-    }
+    // Try to extract confidence
+    const confidenceMatch = content.match(/confidence[:\s]+\*?\*?(High|Medium|Low)\*?\*?/i);
 
-    return results;
-  },
+    // Try to extract cause type
+    const causeMatch = content.match(/cause[:\s]+\*?\*?(fungal|bacterial|viral|pest)\*?\*?/i);
 
-  async generateAdvisory(userMessage, context, toolResults) {
-    try {
-      const prompt = getSystemPrompt(userMessage, context, toolResults);
-      
-      const response = await getOpenAI().chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are an agricultural advisory AI. Provide clear, practical advice for Bangladeshi farmers.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.5,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }
-      });
+    // Check for escalation warning
+    const escalate = lower.includes('consult an agronomist') || lower.includes('professional') || lower.includes('⚠');
 
-      const advisory = JSON.parse(response.choices[0].message.content);
-      
-      // Add escalation check
-      if (toolResults.cropKnowledge) {
-        advisory.escalateToAgronomist = escalationTool.shouldEscalate(advisory);
-      }
-      
-      return advisory;
-    } catch (error) {
-      console.error('Advisory generation error:', error);
-      throw error;
-    }
-  },
+    // Extract recommended actions
+    const actionsMatch = content.match(/(?:recommended actions?|treatment)[:\s]*\n((?:\d+\..+\n?)+)/i);
+    const actions = actionsMatch
+      ? actionsMatch[1].split('\n').filter(l => l.trim()).map(l => l.replace(/^\d+\.\s*/, '').trim())
+      : [];
 
-  formatAdvisory(advisory) {
-    let response = '';
+    // Only return advisory object if we found a disease
+    if (!diseaseMatch && !confidenceMatch) return null;
 
-    if (advisory.likelyDisease) {
-      response += `*${advisory.likelyDisease}*\n\n`;
-      response += `**Confidence:** ${advisory.confidence || 'Medium'}\n\n`;
-      response += `**Cause:** ${advisory.causeType || 'Unknown'}\n\n`;
-    }
-
-    if (advisory.recommendedActions && advisory.recommendedActions.length > 0) {
-      response += '**Recommended Actions:**\n';
-      advisory.recommendedActions.forEach((action, index) => {
-        response += `${index + 1}. ${action}\n`;
-      });
-      response += '\n';
-    }
-
-    if (advisory.preventionTips && advisory.preventionTips.length > 0) {
-      response += '**Prevention Tips:**\n';
-      advisory.preventionTips.forEach((tip, index) => {
-        response += `${index + 1}. ${tip}\n`;
-      });
-      response += '\n';
-    }
-
-    if (advisory.weatherImpact) {
-      response += `**Weather Impact:** ${advisory.weatherImpact}\n\n`;
-    }
-
-    if (advisory.escalateToAgronomist) {
-      response += '⚠️ *This case requires professional attention. Please consult an agronomist or agricultural extension officer as soon as possible.*\n\n';
-    }
-
-    if (advisory.bangladeshContext) {
-      response += `**In Bangladesh context:** ${advisory.bangladeshContext}\n`;
-    }
-
-    return response.trim();
+    return {
+      likelyDisease: diseaseMatch?.[1]?.trim() || null,
+      confidence: confidenceMatch?.[1] || 'Medium',
+      causeType: causeMatch?.[1] || null,
+      recommendedActions: actions,
+      escalateToAgronomist: escalate
+    };
   }
 };
