@@ -33,8 +33,11 @@ export const cropKnowledgeTool = {
     if (relevantDiseases.length === 0) {
       console.log(`    ✗ No disease data found for ${cropName}`);
       return {
-        message: `No disease data found for ${cropName}`,
-        diseases: []
+        found: false,
+        message: `"${cropName}" is not in our crop disease database. Our database currently covers: Rice, Wheat, Maize, Potato, Tomato, Brinjal, Chili, Onion, Cucumber, Jute, Mustard, Banana, Mango.`,
+        diseases: [],
+        totalMatches: 0,
+        supportedCrops: ['Rice','Wheat','Maize','Potato','Tomato','Brinjal','Chili','Onion','Cucumber','Jute','Mustard','Banana','Mango']
       };
     }
 
