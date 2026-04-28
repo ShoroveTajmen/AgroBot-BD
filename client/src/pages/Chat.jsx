@@ -158,7 +158,12 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f7f0] dark:bg-gray-900 overflow-hidden transition-colors duration-300">
+    <div className="flex flex-col h-screen bg-[#f0f7f0] dark:bg-gray-900 overflow-hidden transition-colors duration-300 relative">
+
+      {/* Background image - same as SignIn/SignUp */}
+      <div className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-20 pointer-events-none"
+        style={{ backgroundImage: 'url(/agroBot_BG.png)', filter: 'blur(2px)', transform: 'scale(1.05)' }}
+      />
 
       {/* Sidebar */}
       {showSidebar && (<>
