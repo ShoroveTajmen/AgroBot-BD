@@ -133,7 +133,7 @@ export default function Chat() {
 
   function startNewChat() {
     setConversationId(null);
-    setMessages([{ role: 'bot', content: 'Assalamu Alaikum! I am AgroBot. How can I help with your crops today?', advisory: null }]);
+    setMessages([{ role: 'bot', content: 'Hello! I am AgroBot 🌾. Your AI farming assistant. How can I help with your crops today?', advisory: null }]);
     setShowSidebar(false);
   }
 
