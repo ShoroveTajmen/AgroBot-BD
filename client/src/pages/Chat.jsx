@@ -56,10 +56,15 @@ function BotMessage({ content, advisory }) {
   );
 }
 
-function UserMessage({ content }) {
+function UserMessage({ content, imagePreview }) {
   return (
     <div className="flex items-end justify-end mb-4">
       <div className="max-w-[74%]">
+        {imagePreview && (
+          <div className="mb-1 flex justify-end">
+            <img src={imagePreview} alt="uploaded crop" className="max-w-[200px] max-h-[150px] rounded-xl object-cover shadow-md border-2 border-[#1a4d1a] dark:border-green-600" />
+          </div>
+        )}
         <div className="bg-[#1a4d1a] dark:bg-green-700 text-white rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed transition-colors">
           {content}
         </div>
@@ -94,7 +99,11 @@ export default function Chat() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [conversationId, setConversationId] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
+  const [imageMimeType, setImageMimeType] = useState(null);
   const bottomRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, typing]);
   useEffect(() => { loadConversations(); }, []);
@@ -138,14 +147,60 @@ export default function Chat() {
     } catch (e) { console.error('Failed to delete conversation:', e.message); }
   }
 
+  function handleImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5MB');
+      return;
+    }
+    setImageMimeType(file.type);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      setImagePreview(dataUrl);
+      // Extract base64 part only (remove "data:image/jpeg;base64," prefix)
+      setImageBase64(dataUrl.split(',')[1]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    setImagePreview(null);
+    setImageBase64(null);
+    setImageMimeType(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
   async function sendMessage() {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text && !imageBase64 || loading) return;
+
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: text, advisory: null }]);
+    const userDisplayContent = text || '📷 Sent a crop photo for analysis';
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: userDisplayContent,
+      imagePreview: imagePreview,
+      advisory: null
+    }]);
+
+    const imgBase64 = imageBase64;
+    const imgMime = imageMimeType;
+    clearImage();
+
     setTyping(true); setLoading(true);
     try {
-      const res = await api.post('/chat', { conversationId, message: text });
+      const payload = { conversationId, message: text };
+      if (imgBase64) {
+        payload.image = imgBase64;
+        payload.imageMimeType = imgMime;
+      }
+      const res = await api.post('/chat', payload);
       if (res.data.conversationId) { setConversationId(res.data.conversationId); loadConversations(); }
       setMessages(prev => [...prev, { role: 'bot', content: res.data.response.content, advisory: res.data.response.advisory }]);
     } catch (err) {
@@ -261,7 +316,7 @@ export default function Chat() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          {messages.map((msg, i) => msg.role === 'bot' ? <BotMessage key={i} content={msg.content} advisory={msg.advisory} /> : <UserMessage key={i} content={msg.content} />)}
+          {messages.map((msg, i) => msg.role === 'bot' ? <BotMessage key={i} content={msg.content} advisory={msg.advisory} /> : <UserMessage key={i} content={msg.content} imagePreview={msg.imagePreview} />)}
           {typing && <TypingIndicator />}
           <div ref={bottomRef} className="h-8" />
         </div>
@@ -275,8 +330,30 @@ export default function Chat() {
             <button onClick={() => setInput('Best fertilizer for Rice?')} className="px-4 py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Best fertilizer for Rice?</button>
             <button onClick={() => setInput("Today's Weather")} className="px-4 py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Today's Weather</button>
           </div>
+          {/* Image preview above input */}
+          {imagePreview && (
+            <div className="mb-2 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-2xl px-3 py-2 shadow-sm">
+              <img src={imagePreview} alt="preview" className="w-12 h-12 rounded-lg object-cover border border-[#c8e6c9] dark:border-green-700" />
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">📷 Crop photo ready to send</span>
+              <button onClick={clearImage} className="text-gray-400 hover:text-red-500 text-lg leading-none">✕</button>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-full px-4 py-2 shadow-md transition-colors">
-            <button className="flex-shrink-0">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            {/* Camera button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0"
+              title="Upload crop photo"
+            >
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
                 <rect x="3" y="6" width="18" height="13" rx="2" fill="#a8d5a8" stroke="#1a4d1a" strokeWidth="2"/>
                 <circle cx="12" cy="12.5" r="3.5" fill="#e8f5e9" stroke="#1a4d1a" strokeWidth="1.5"/>
@@ -286,8 +363,9 @@ export default function Chat() {
               </svg>
             </button>
             <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-              placeholder="Type your question..." className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" />
-            <button onClick={sendMessage} disabled={loading}
+              placeholder={imagePreview ? "Add a message (optional)..." : "Type your question..."}
+              className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" />
+            <button onClick={sendMessage} disabled={loading || (!input.trim() && !imageBase64)}
               className="w-10 h-10 rounded-full bg-[#1a4d1a] dark:bg-green-600 text-white flex items-center justify-center flex-shrink-0 hover:bg-[#2d6a2d] dark:hover:bg-green-700 transition disabled:bg-gray-400 dark:disabled:bg-gray-600">➤</button>
           </div>
         </div>
