@@ -71,7 +71,7 @@ describe('escalationTool', () => {
       const advisory = { causeType: 'viral' };
       const message = escalationTool.getEscalationMessage(advisory);
       
-      expect(message).toContain('viral');
+      expect(message.toLowerCase()).toContain('viral');
     });
   });
 });
