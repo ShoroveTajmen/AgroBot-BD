@@ -45,20 +45,20 @@ export default function SignIn() {
       />
 
       {/* Header */}
-      <header className="relative z-10 flex justify-between items-center px-6 py-4">
-        <div className="flex items-center gap-2 font-bold text-[#1a4d1a] dark:text-green-400">
-          <img src="/agro_icon.png" alt="AgroBot BD" className="w-8 h-8 rounded-full" />
+      <header className="relative z-10 flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center gap-2 font-bold text-[#1a4d1a] dark:text-green-400 text-sm sm:text-base">
+          <img src="/agro_icon.png" alt="AgroBot BD" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
           AgroBot BD
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button className="w-8 h-8 rounded-full border-2 border-[#1a4d1a] dark:border-green-500 text-[#1a4d1a] dark:text-green-400 font-bold text-sm">?</button>
+          <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#1a4d1a] dark:border-green-500 text-[#1a4d1a] dark:text-green-400 font-bold text-xs sm:text-sm">?</button>
         </div>
       </header>
 
       {/* Main */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-6">
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 w-full max-w-md border border-white/50 dark:border-gray-700 transition-colors duration-300">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-4 sm:pb-6">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-white/50 dark:border-gray-700 transition-colors duration-300">
 
           {/* Logo */}
           <div className="flex justify-center mb-4">
@@ -67,8 +67,8 @@ export default function SignIn() {
             </div>
           </div>
 
-          <h1 className="text-center text-2xl font-bold text-[#1a4d1a] dark:text-green-400 mb-1">Welcome Back</h1>
-          <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-6">Sign in to manage your crops and check field data</p>
+          <h1 className="text-center text-xl sm:text-2xl font-bold text-[#1a4d1a] dark:text-green-400 mb-1">Welcome Back</h1>
+          <p className="text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-5 sm:mb-6">Sign in to manage your crops and check field data</p>
 
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg px-4 py-2 text-sm mb-4">

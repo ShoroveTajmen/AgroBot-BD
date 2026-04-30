@@ -43,11 +43,11 @@ function Advisory({ advisory }) {
 function BotMessage({ content, advisory }) {
   return (
     <div className="flex items-end gap-2 mb-4">
-      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
+      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
         <img src="/agro_icon.png" alt="bot" className="w-full h-full object-cover" />
       </div>
-      <div className="max-w-[74%]">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm text-sm text-gray-800 dark:text-gray-200 leading-relaxed transition-colors">
+      <div className="max-w-[85%] sm:max-w-[74%]">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm text-sm text-gray-800 dark:text-gray-200 leading-relaxed transition-colors">
           <span dangerouslySetInnerHTML={{ __html: formatText(content) }} />
           <Advisory advisory={advisory} />
         </div>
@@ -59,13 +59,13 @@ function BotMessage({ content, advisory }) {
 function UserMessage({ content, imagePreview }) {
   return (
     <div className="flex items-end justify-end mb-4">
-      <div className="max-w-[74%]">
+      <div className="max-w-[85%] sm:max-w-[74%]">
         {imagePreview && (
           <div className="mb-1 flex justify-end">
-            <img src={imagePreview} alt="uploaded crop" className="max-w-[200px] max-h-[150px] rounded-xl object-cover shadow-md border-2 border-[#1a4d1a] dark:border-green-600" />
+            <img src={imagePreview} alt="uploaded crop" className="max-w-[160px] sm:max-w-[200px] max-h-[120px] sm:max-h-[150px] rounded-xl object-cover shadow-md border-2 border-[#1a4d1a] dark:border-green-600" />
           </div>
         )}
-        <div className="bg-[#1a4d1a] dark:bg-green-700 text-white rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed transition-colors">
+        <div className="bg-[#1a4d1a] dark:bg-green-700 text-white rounded-2xl rounded-br-sm px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed transition-colors">
           {content}
         </div>
       </div>
@@ -76,7 +76,7 @@ function UserMessage({ content, imagePreview }) {
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2 mb-4">
-      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
+      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
         <img src="/agro_icon.png" alt="bot" className="w-full h-full object-cover" />
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm transition-colors">
@@ -223,7 +223,7 @@ export default function Chat() {
       {/* Sidebar */}
       {showSidebar && (<>
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowSidebar(false)} />
-        <div className="fixed left-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col transition-colors">
+        <div className="fixed left-0 top-0 bottom-0 w-full sm:w-80 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col transition-colors">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[#1a4d1a] dark:text-green-400">Conversation History</h2>
@@ -261,7 +261,7 @@ export default function Chat() {
       </>)}
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50 flex items-center justify-between px-4 transition-colors">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm z-50 flex items-center justify-between px-3 sm:px-4 transition-colors">
         <div className="flex items-center gap-2">
           <button onClick={() => setShowSidebar(!showSidebar)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition">
             {showSidebar ? (
@@ -271,7 +271,7 @@ export default function Chat() {
             )}
           </button>
           <img src="/agro_icon.png" alt="AgroBot BD" className="w-8 h-8 rounded-full" />
-          <span className="font-bold text-[#1a4d1a] dark:text-green-400 text-base">AgroBot BD</span>
+          <span className="font-bold text-[#1a4d1a] dark:text-green-400 text-sm sm:text-base">AgroBot BD</span>
         </div>
         <div className="flex items-center gap-2 relative">
           <ThemeToggle />
@@ -281,7 +281,7 @@ export default function Chat() {
             <img src="/user_icon.png" alt="profile" className="w-full h-full object-cover rounded-full" />
           </button>
           {showDropdown && (
-            <div className="absolute top-11 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 min-w-[200px] z-50 transition-colors" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-11 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 min-w-[180px] sm:min-w-[200px] z-50 transition-colors" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-[#e8f5e9] dark:bg-gray-700 border-[2.5px] border-[#1a4d1a] dark:border-green-500 overflow-hidden">
                   <img src="/user_icon.png" alt="avatar" className="w-full h-full object-cover" />
@@ -309,7 +309,7 @@ export default function Chat() {
       {showDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />}
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto pt-16 pb-48 px-4">
+      <main className="flex-1 overflow-y-auto pt-16 pb-48 px-2 sm:px-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center my-4">
             <span className="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-1">
@@ -322,13 +322,12 @@ export default function Chat() {
         </div>
       </main>
 
-      {/* Input bar */}
-      <div className="fixed bottom-16 left-0 right-0 px-4 py-3 bg-[#f0f7f0] dark:bg-gray-900 transition-colors">
+      <div className="fixed bottom-16 left-0 right-0 px-2 sm:px-4 py-2 sm:py-3 bg-[#f0f7f0] dark:bg-gray-900 transition-colors">
         <div className="max-w-2xl mx-auto">
-          <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-            <button onClick={() => setInput('How to control pests in rice?')} className="px-4 py-2 rounded-full bg-[#a8d5a8] dark:bg-green-700 text-[#1a4d1a] dark:text-white text-sm font-medium whitespace-nowrap hover:bg-[#8fc98f] dark:hover:bg-green-600 transition">How to control pests in rice?</button>
-            <button onClick={() => setInput('Best fertilizer for Rice?')} className="px-4 py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Best fertilizer for Rice?</button>
-            <button onClick={() => setInput("Today's Weather")} className="px-4 py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Today's Weather</button>
+          <div className="flex gap-2 mb-2 sm:mb-3 overflow-x-auto pb-1 sm:pb-2 scrollbar-hide">
+            <button onClick={() => setInput('How to control pests in rice?')} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#a8d5a8] dark:bg-green-700 text-[#1a4d1a] dark:text-white text-xs sm:text-sm font-medium whitespace-nowrap hover:bg-[#8fc98f] dark:hover:bg-green-600 transition">How to control pests in rice?</button>
+            <button onClick={() => setInput('Best fertilizer for Rice?')} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Best fertilizer for Rice?</button>
+            <button onClick={() => setInput("Today's Weather")} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition">Today's Weather</button>
           </div>
           {/* Image preview above input */}
           {imagePreview && (

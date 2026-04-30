@@ -62,8 +62,8 @@ export default function SignUp() {
         <ThemeToggle />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-6">
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-2xl p-7 w-full max-w-md border border-white/50 dark:border-gray-700 transition-colors duration-300">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-4 sm:py-6">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-7 w-full max-w-md border border-white/50 dark:border-gray-700 transition-colors duration-300">
 
           {/* Logo */}
           <div className="flex justify-center mb-3">
@@ -72,8 +72,8 @@ export default function SignUp() {
             </div>
           </div>
 
-          <h1 className="text-center text-2xl font-bold text-[#1a4d1a] dark:text-green-400 mb-1">Welcome, Farmer</h1>
-          <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-5 leading-relaxed">
+          <h1 className="text-center text-xl sm:text-2xl font-bold text-[#1a4d1a] dark:text-green-400 mb-1">Welcome, Farmer</h1>
+          <p className="text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
             Join AgroBot BD to grow smarter and achieve better yields for your family.
           </p>
 
