@@ -5,9 +5,13 @@
   "type": "commonjs",
   "scripts": {
     "test": "playwright test",
+    "dev:head": "playwright test --headed",
+    "dev:slow": "playwright test --headed --slow-mo=800",
+    "dev:very-slow": "playwright test --headed --slow-mo=3000",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:debug": "playwright test --debug"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
