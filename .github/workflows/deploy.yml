@@ -1,0 +1,52 @@
+name: Deploy — Vercel Production
+
+on:
+  workflow_dispatch: # manually triggered only — add VERCEL_TOKEN secret to enable auto-deploy
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Gate: CI must pass before deploying
+  # ─────────────────────────────────────────────
+  deploy-client:
+    name: Deploy Client to Vercel
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment info
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: client
+
+      - name: Build project with Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: client
+
+      - name: Deploy to Vercel production
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: client
+
+  # ─────────────────────────────────────────────
+  # Optional: deploy server (e.g. Railway / Render)
+  # Uncomment and configure for your backend host
+  # ─────────────────────────────────────────────
+  # deploy-server:
+  #   name: Deploy Server
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     - name: Trigger Railway deploy
+  #       run: |
+  #         curl -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK }}"
