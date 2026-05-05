@@ -100,11 +100,11 @@ function Advisory({ advisory }) {
  */
 function BotMessage({ content, advisory }) {
   return (
-    <div className="flex items-end gap-2 mb-4">
+    <div className="flex items-end gap-2 mb-4 w-full">
       <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
         <img src="/agro_icon.png" alt="bot" className="w-full h-full object-cover" />
       </div>
-      <div className="max-w-[85%] sm:max-w-[74%]">
+      <div className="max-w-[75%] sm:max-w-[65%]">
         <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm text-sm text-gray-800 dark:text-gray-200 leading-relaxed transition-colors">
           <span dangerouslySetInnerHTML={{ __html: formatText(content) }} />
           <Advisory advisory={advisory} />
@@ -124,8 +124,8 @@ function BotMessage({ content, advisory }) {
  */
 function UserMessage({ content, imagePreview }) {
   return (
-    <div className="flex items-end justify-end mb-4">
-      <div className="max-w-[85%] sm:max-w-[74%]">
+    <div className="flex items-end justify-end mb-4 w-full">
+      <div className="max-w-[75%] sm:max-w-[55%]">
         {imagePreview && (
           <div className="mb-1 flex justify-end">
             <img src={imagePreview} alt="uploaded crop" className="max-w-[160px] sm:max-w-[200px] max-h-[120px] sm:max-h-[150px] rounded-xl object-cover shadow-md border-2 border-[#1a4d1a] dark:border-green-600" />
@@ -147,7 +147,7 @@ function UserMessage({ content, imagePreview }) {
  */
 function TypingIndicator() {
   return (
-    <div className="flex items-end gap-2 mb-4">
+    <div className="flex items-end gap-2 mb-4 w-full">
       <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-[#c8e6c9] dark:border-green-700 flex-shrink-0">
         <img src="/agro_icon.png" alt="bot" className="w-full h-full object-cover" />
       </div>
@@ -193,7 +193,7 @@ export default function Chat() {
       if (res.data.conversations.length > 0 && !conversationId) {
         loadConversation(res.data.conversations[0]._id);
       } else if (res.data.conversations.length === 0) {
-        setMessages([{ role: 'bot', content: 'Assalamu Alaikum! I am AgroBot. How can I help with your crops today?\nYou can ask me about weather, pest control, or describe your crop problem.', advisory: null }]);
+        setMessages([{ role: 'bot', content: 'Hello! I am AgroBot 🌾! Your AI farming assistant. How can I help with your crops today?\nYou can ask me about weather, pest control, or describe your crop problem.', advisory: null }]);
       }
     } catch (e) { console.warn('Failed to load conversations:', e.message); }
   }
@@ -428,8 +428,8 @@ export default function Chat() {
       {showDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />}
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto pt-16 pb-48 px-2 sm:px-4">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 overflow-y-auto pt-16 pb-48 px-2 sm:px-3">
+        <div>
           <div className="flex justify-center my-4">
             <span className="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-1">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
