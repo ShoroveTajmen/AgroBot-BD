@@ -1,3 +1,17 @@
+/**
+ * SignIn.jsx — User Login Page
+ *
+ * Public route — redirects to / if the user is already authenticated.
+ *
+ * Features:
+ *  - Email + password login form
+ *  - Password show/hide toggle
+ *  - Inline error display for invalid credentials
+ *  - Stores auth_token and auth_user in localStorage on success
+ *  - Redirects to the Chat page (/) after successful login
+ *  - Dark/Light mode support via ThemeToggle
+ */
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api.js';
@@ -5,18 +19,29 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 
 export default function SignIn() {
   const navigate = useNavigate();
+
+  // Form field state
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
+  const [showPw, setShowPw]     = useState(false);  // toggles password visibility
+
+  // UI state
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
+  /**
+   * handleSubmit — Submit the sign-in form.
+   *
+   * Calls POST /api/auth/signin, stores the returned token and user object
+   * in localStorage, then navigates to the Chat page.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const res = await api.post('/auth/signin', { email, password });
+      // Persist auth data so the app stays logged in across page refreshes
       localStorage.setItem('auth_token', res.data.token);
       localStorage.setItem('auth_user', JSON.stringify(res.data.user));
       navigate('/');

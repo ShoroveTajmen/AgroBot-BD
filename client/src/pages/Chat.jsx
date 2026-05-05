@@ -1,12 +1,52 @@
+/**
+ * Chat.jsx — Main Chat Interface (Protected Route)
+ *
+ * The primary screen of AgroBot BD. Provides a full-featured chat UI
+ * for farmers to interact with the AI advisory agent.
+ *
+ * Key features:
+ *  - Real-time chat with the AI advisory agent
+ *  - Conversation history sidebar (load, delete past chats)
+ *  - Image upload for crop photo analysis (GPT-4o Vision)
+ *  - Advisory card display with disease name, confidence, and actions
+ *  - Escalation warning when professional consultation is recommended
+ *  - Quick suggestion chips for common questions
+ *  - User profile dropdown with logout
+ *  - Dark/Light mode toggle
+ *  - Responsive layout (mobile-first)
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
+/**
+ * formatText — Convert markdown bold/italic and newlines to HTML.
+ *
+ * Used to render the AI's response text with basic formatting.
+ * **text** → <strong>text</strong>
+ * *text*   → <em>text</em>
+ * \n       → <br/>
+ *
+ * @param {string} text - Raw text from the AI response
+ * @returns {string} HTML string safe for dangerouslySetInnerHTML
+ */
 function formatText(text) {
-  return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br/>');
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
 }
 
+/**
+ * formatDate — Convert an ISO date string to a human-readable relative time.
+ *
+ * Examples: "Just now", "5m ago", "2h ago", "3d ago", or a locale date string.
+ *
+ * @param {string} dateString - ISO 8601 date string
+ * @returns {string} Human-readable relative time
+ */
 function formatDate(dateString) {
   const date = new Date(dateString), now = new Date(), diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000), diffHours = Math.floor(diffMs / 3600000), diffDays = Math.floor(diffMs / 86400000);
@@ -17,6 +57,15 @@ function formatDate(dateString) {
   return date.toLocaleDateString();
 }
 
+/**
+ * Advisory — Structured disease advisory card rendered below bot messages.
+ *
+ * Only renders when the AI has produced a final diagnosis (advisory.likelyDisease is set).
+ * Displays disease name, confidence, cause type, recommended actions,
+ * and an escalation warning if professional consultation is needed.
+ *
+ * @param {object} advisory - Advisory object from the AI response
+ */
 function Advisory({ advisory }) {
   if (!advisory?.likelyDisease) return null;
   return (
@@ -40,6 +89,15 @@ function Advisory({ advisory }) {
   );
 }
 
+/**
+ * BotMessage — Chat bubble for AI responses (left-aligned).
+ *
+ * Renders the bot's text response with markdown formatting applied,
+ * followed by the Advisory card if a diagnosis was made.
+ *
+ * @param {string} content   - Bot response text (may contain **bold** and *italic*)
+ * @param {object} advisory  - Advisory card data (null for follow-up questions)
+ */
 function BotMessage({ content, advisory }) {
   return (
     <div className="flex items-end gap-2 mb-4">
@@ -56,6 +114,14 @@ function BotMessage({ content, advisory }) {
   );
 }
 
+/**
+ * UserMessage — Chat bubble for farmer messages (right-aligned).
+ *
+ * Shows the image preview above the message bubble if the farmer uploaded a photo.
+ *
+ * @param {string} content       - Farmer's message text
+ * @param {string} imagePreview  - Base64 data URL of the uploaded image (optional)
+ */
 function UserMessage({ content, imagePreview }) {
   return (
     <div className="flex items-end justify-end mb-4">
@@ -73,6 +139,12 @@ function UserMessage({ content, imagePreview }) {
   );
 }
 
+/**
+ * TypingIndicator — Animated three-dot indicator shown while the AI is processing.
+ *
+ * Displayed immediately after the user sends a message and removed
+ * once the AI response arrives.
+ */
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2 mb-4">
@@ -106,8 +178,14 @@ export default function Chat() {
   const fileInputRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, typing]);
-  useEffect(() => { loadConversations(); }, []);
+  useEffect(() => { loadConversations(); }, []); // load conversations on mount
 
+  /**
+   * loadConversations — Fetch all conversations for the current user.
+   *
+   * On success, automatically loads the most recent conversation.
+   * If no conversations exist, shows the default welcome message.
+   */
   async function loadConversations() {
     try {
       const res = await api.get('/conversations');
@@ -120,6 +198,11 @@ export default function Chat() {
     } catch (e) { console.warn('Failed to load conversations:', e.message); }
   }
 
+  /**
+   * loadConversation — Load a specific conversation's messages by ID.
+   *
+   * Maps the server's role format ('assistant') to the UI format ('bot').
+   */
   async function loadConversation(convId) {
     try {
       setConversationId(convId);
@@ -131,12 +214,23 @@ export default function Chat() {
     } catch (e) { console.error('Failed to load conversation:', e.message); }
   }
 
+  /**
+   * startNewChat — Reset the chat to a fresh state without a conversation ID.
+   *
+   * The new conversation is only created in MongoDB when the first message is sent.
+   */
   function startNewChat() {
     setConversationId(null);
     setMessages([{ role: 'bot', content: 'Hello! I am AgroBot 🌾. Your AI farming assistant. How can I help with your crops today?', advisory: null }]);
     setShowSidebar(false);
   }
 
+  /**
+   * deleteChat — Delete a conversation after user confirmation.
+   *
+   * Stops click propagation so the conversation item's onClick doesn't fire.
+   * If the deleted conversation is the currently active one, starts a new chat.
+   */
   async function deleteChat(convId, e) {
     e.stopPropagation();
     if (!confirm('Delete this conversation?')) return;
@@ -147,6 +241,13 @@ export default function Chat() {
     } catch (e) { console.error('Failed to delete conversation:', e.message); }
   }
 
+  /**
+   * handleImageSelect — Handle file picker selection for crop photo upload.
+   *
+   * Validates file type (must be image) and size (max 5MB).
+   * Converts the selected file to a base64 data URL for preview and API submission.
+   * The base64 string (without the data URL prefix) is stored for sending to the backend.
+   */
   function handleImageSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -169,6 +270,9 @@ export default function Chat() {
     reader.readAsDataURL(file);
   }
 
+  /**
+   * clearImage — Reset all image-related state and clear the file input.
+   */
   function clearImage() {
     setImagePreview(null);
     setImageBase64(null);
@@ -176,6 +280,18 @@ export default function Chat() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  /**
+   * sendMessage — Send the current message (and optional image) to the AI.
+   *
+   * Flow:
+   *  1. Validate: at least text or image must be present
+   *  2. Optimistically add the user message to the UI immediately
+   *  3. Clear the image state before the async call (prevents double-send)
+   *  4. Show typing indicator while waiting for the AI response
+   *  5. POST to /api/chat with message + optional image data
+   *  6. Append the bot response and advisory card to the message list
+   *  7. Refresh the conversation list in the sidebar
+   */
   async function sendMessage() {
     const text = input.trim();
     if (!text && !imageBase64 || loading) return;
@@ -208,6 +324,9 @@ export default function Chat() {
     } finally { setTyping(false); setLoading(false); }
   }
 
+  /**
+   * handleLogout — Clear auth data from localStorage and redirect to sign-in.
+   */
   function handleLogout() {
     localStorage.removeItem('auth_token'); localStorage.removeItem('auth_user'); navigate('/signin');
   }
