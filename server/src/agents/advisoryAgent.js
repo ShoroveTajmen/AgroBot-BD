@@ -101,62 +101,28 @@ async function executeTool(name, args) {
   }
 }
 
-// ── Minimum follow-up rounds required before final answer ────────────────────
-const MIN_FOLLOWUP_ROUNDS = 2;
-
-// ── Count how many follow-up rounds already happened in session ───────────────
-// A "round" = one assistant question + one farmer reply
-function countFollowUpRounds(sessionMessages) {
-  // sessionMessages are the SAVED messages (before current user message)
-  // Each assistant message that has NO advisory = a follow-up question round
-  let rounds = 0;
-  for (const msg of sessionMessages) {
-    if ((msg.role === 'assistant') && !msg.advisory) {
-      rounds++;
-    }
-  }
-  return rounds;
-}
-
-// ── Build system prompt dynamically based on follow-up progress ───────────────
-function buildSystemPrompt(followUpRoundsDone) {
-  const roundsRemaining = Math.max(0, MIN_FOLLOWUP_ROUNDS - followUpRoundsDone);
-  const canGiveFinalAnswer = followUpRoundsDone >= MIN_FOLLOWUP_ROUNDS;
-
-  return `You are AgroBot, an expert agricultural advisory AI for Bangladeshi farmers.
+// ── System prompt ─────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are AgroBot, an expert agricultural advisory AI for Bangladeshi farmers.
 Your goal is to diagnose crop problems and provide practical, actionable advice.
 
-## Follow-up Status:
-- Follow-up rounds completed: ${followUpRoundsDone}
-- Minimum required: ${MIN_FOLLOWUP_ROUNDS}
-- Rounds still needed: ${roundsRemaining}
-- Can give final answer now: ${canGiveFinalAnswer}
+## How to handle each message:
 
-## STRICT RULES:
+You have access to three tools. Use them whenever they are relevant — you decide:
+- search_crop_diseases: Use when you know the crop type AND have symptom information
+- get_weather: Use when the farmer mentions a location/district
+- check_escalation: Use after you have identified a likely disease
 
-${!canGiveFinalAnswer ? `
-### ⚠ YOU MUST ASK FOLLOW-UP QUESTIONS — DO NOT GIVE A FINAL ANSWER YET
-You still need ${roundsRemaining} more follow-up round(s) before diagnosing.
-- Ask 2-3 specific questions to gather more information
-- Do NOT call any tools yet
-- Do NOT give a diagnosis yet
-- Focus on gathering: crop type, symptoms, location, duration, irrigation method
+## Conversation flow:
 
-` : `
-### ✅ YOU HAVE ENOUGH FOLLOW-UP — NOW DIAGNOSE AND USE TOOLS
-You have completed the required follow-up rounds. Now:
-1. Call search_crop_diseases if crop + symptoms are known
-2. Call get_weather if location is mentioned
-3. Call check_escalation after identifying the disease
-4. Give a complete final diagnosis
+If the farmer's message does not yet have enough information to diagnose (no crop type, no symptoms),
+ask 2-3 focused follow-up questions. Do NOT call tools yet.
 
-`}
+Once you have enough information (crop + symptoms at minimum), call the relevant tools and give a full diagnosis.
 
-## What to ask in follow-up (if still needed):
-- Round 1: Ask about crop type, specific symptoms, and how long ago it started
-- Round 2: Ask about location/district, irrigation method, and whether it is spreading
+If the farmer asks a follow-up question after a diagnosis (e.g. organic alternatives, cost, prevention),
+answer it directly from your knowledge. Only call tools again if new symptoms or a new location is mentioned.
 
-## Final response format (only when canGiveFinalAnswer is true):
+## Final diagnosis format (use when you have enough info):
 - **Disease:** name
 - **Confidence:** High/Medium/Low
 - **Cause:** fungal/bacterial/viral/pest
@@ -166,27 +132,16 @@ You have completed the required follow-up rounds. Now:
 - **Bangladesh Context:** local relevance
 - ⚠ Escalation warning if needed
 
-## General Rules:
+## When crop is NOT in the database (search_crop_diseases returns found: false):
+- Tell the farmer this crop is not in the verified database yet and show supported crops
+- Still give advice using your own agricultural knowledge, structured like the format above
+- Mark confidence as Low and add: "This advice is based on general agricultural knowledge, not our verified crop database."
+- Still call check_escalation and get_weather if location is known
+
+## General rules:
 - Be concise and practical
 - Use simple language suitable for farmers
-- Always respond in English by default
-- Only respond in Bangla if the user writes in Bangla first
-
-## When crop is NOT in the database (search_crop_diseases returns found: false):
-- Do NOT make up or guess a disease name from the database
-- Clearly tell the farmer: "This crop is not in our verified database yet"
-- Show the list of supported crops from the tool result
-- Then use your own OpenAI agricultural knowledge to give general advice
-- Structure your general advice exactly like a normal final response:
-  - **Disease (General Knowledge):** best guess based on symptoms
-  - **Confidence:** Low (not from verified database)
-  - **Cause:** your best assessment
-  - **Recommended Actions:** practical steps
-  - **Prevention Tips:** general tips
-  - ⚠ Always add: "This advice is based on general agricultural knowledge, not our verified crop database. Please consult a local agronomist for confirmation."
-- Still call check_escalation after forming your general assessment
-- Still call get_weather if location is known (weather is always useful)`;
-}
+- Respond in English by default; switch to Bangla only if the farmer writes in Bangla first`;
 
 // ── Main agentic agent ────────────────────────────────────────────────────────
 export const advisoryAgent = {
@@ -194,24 +149,13 @@ export const advisoryAgent = {
     console.log('\n=== AGENTIC PROCESSING ===');
     console.log('User message:', userMessage);
 
-    // Count how many follow-up rounds already done in this conversation
-    const followUpRoundsDone = countFollowUpRounds(session.messages);
-    const canGiveFinalAnswer = followUpRoundsDone >= MIN_FOLLOWUP_ROUNDS;
-
-    console.log(`  Follow-up rounds done: ${followUpRoundsDone}/${MIN_FOLLOWUP_ROUNDS} — can finalize: ${canGiveFinalAnswer}`);
-
-    // Build dynamic system prompt based on follow-up progress
-    const systemPrompt = buildSystemPrompt(followUpRoundsDone);
-
-    // Build messages array with full conversation history
+    // Build messages array: system prompt + last 10 conversation messages + current message
     const messages = [
-      { role: 'system', content: systemPrompt },
-      // Include last 10 messages for context
+      { role: 'system', content: SYSTEM_PROMPT },
       ...session.messages.slice(-10).map(msg => ({
         role: msg.role === 'user' ? 'user' : 'assistant',
         content: msg.content
       })),
-      // Current user message
       { role: 'user', content: userMessage }
     ];
 
@@ -225,9 +169,8 @@ export const advisoryAgent = {
       const response = await getOpenAI().chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         messages,
-        // Only offer tools once follow-up is complete
-        tools: canGiveFinalAnswer ? TOOL_DEFINITIONS : undefined,
-        tool_choice: canGiveFinalAnswer ? 'auto' : undefined,
+        tools: TOOL_DEFINITIONS,
+        tool_choice: 'auto',
         temperature: 0.4,
         max_tokens: 1500
       });
@@ -237,14 +180,14 @@ export const advisoryAgent = {
 
       console.log(`  Finish reason: ${finishReason}`);
 
-      // Add assistant message to history
+      // Add assistant message to history for next iteration
       messages.push(message);
 
       // ── Agent decided to call tools ───────────────────────────────────────
       if (finishReason === 'tool_calls' && message.tool_calls?.length > 0) {
         console.log(`  → Agent requested ${message.tool_calls.length} tool(s)`);
 
-        // Execute ALL requested tools in parallel
+        // Execute all requested tools in parallel
         const toolResults = await Promise.all(
           message.tool_calls.map(async (toolCall) => {
             const args = JSON.parse(toolCall.function.arguments);
@@ -264,18 +207,15 @@ export const advisoryAgent = {
 
       // ── Agent finished — has a final text response ────────────────────────
       if (finishReason === 'stop' && message.content) {
-        const isFinalAnswer = canGiveFinalAnswer && toolCallCount > 0;
-        console.log(`  ✓ Agent finished — ${isFinalAnswer ? 'FINAL ANSWER' : 'FOLLOW-UP QUESTION'} (${toolCallCount} tool calls)`);
+        // A response counts as a diagnosis if tools were called this turn
+        const isDiagnosis = toolCallCount > 0;
+        console.log(`  ✓ Agent finished — ${isDiagnosis ? 'DIAGNOSIS' : 'CONVERSATIONAL'} response (${toolCallCount} tool calls)`);
         console.log('=== END AGENTIC PROCESSING ===\n');
-
-        // Only parse advisory card data for final answers (not follow-up questions)
-        const advisory = isFinalAnswer
-          ? this.parseAdvisoryFromResponse(message.content)
-          : null;
 
         return {
           content: message.content,
-          advisory
+          // Only attach advisory card data when a fresh diagnosis was made
+          advisory: isDiagnosis ? this.parseAdvisoryFromResponse(message.content) : null
         };
       }
 
@@ -283,7 +223,7 @@ export const advisoryAgent = {
       break;
     }
 
-    // Fallback
+    // Fallback if max tool calls exceeded
     console.warn('⚠ Max tool calls reached');
     const lastMessage = messages[messages.length - 1];
     return {
@@ -293,26 +233,26 @@ export const advisoryAgent = {
   },
 
   // ── Parse structured advisory data from the text response ─────────────────
-  // This extracts key fields so the UI can display the advisory card
+  // Extracts key fields so the UI can render the advisory card
   parseAdvisoryFromResponse(content) {
     if (!content) return null;
 
     const lower = content.toLowerCase();
 
-    // Detect if this is a general knowledge fallback (crop not in database)
+    // Detect general knowledge fallback (crop not in database)
     const isGeneralKnowledge = lower.includes('not in our verified database') ||
       lower.includes('general knowledge') ||
       lower.includes('general agricultural knowledge');
 
-    // Try to extract disease name
+    // Extract disease name
     const diseaseMatch = content.match(/\*\*?(?:disease(?:\s*\(general knowledge\))?)[:\s]+([^\n*]+)\*\*?/i)
       || content.match(/\*\*?([A-Z][^*\n]+(?:disease|blight|rot|wilt|rust|smut|borer|virus|mildew|spot|blast|burn)[^*\n]*)\*\*?/i)
       || content.match(/(?:disease|diagnosis|identified)[:\s]+\*?\*?([^\n*]+)/i);
 
-    // Try to extract confidence
+    // Extract confidence
     const confidenceMatch = content.match(/confidence[:\s]+\*?\*?(High|Medium|Low)\*?\*?/i);
 
-    // Try to extract cause type
+    // Extract cause type
     const causeMatch = content.match(/cause[:\s]+\*?\*?(fungal|bacterial|viral|pest)\*?\*?/i);
 
     // Check for escalation warning
@@ -327,19 +267,17 @@ export const advisoryAgent = {
       ? actionsMatch[1].split('\n').filter(l => l.trim()).map(l => l.replace(/^\d+\.\s*/, '').trim())
       : [];
 
-    // For general knowledge fallback, always return an advisory with low confidence
     if (isGeneralKnowledge) {
       return {
         likelyDisease: diseaseMatch?.[1]?.trim() || 'Unknown (crop not in database)',
         confidence: 'Low',
         causeType: causeMatch?.[1] || null,
         recommendedActions: actions,
-        escalateToAgronomist: true, // always escalate when not from verified data
+        escalateToAgronomist: true,
         isGeneralKnowledge: true
       };
     }
 
-    // Only return advisory object if we found a disease
     if (!diseaseMatch && !confidenceMatch) return null;
 
     return {
