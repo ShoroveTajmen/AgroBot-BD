@@ -117,18 +117,27 @@ function BotMessage({ content, advisory }) {
 /**
  * UserMessage — Chat bubble for farmer messages (right-aligned).
  *
- * Shows the image preview above the message bubble if the farmer uploaded a photo.
+ * Shows the image preview above the message bubble if the farmer uploaded a photo
+ * (imagePreview = base64 data URL, available in the current session).
+ * Shows a 📷 badge if the message had an image but preview is no longer available
+ * (e.g. loaded from conversation history).
  *
- * @param {string} content       - Farmer's message text
- * @param {string} imagePreview  - Base64 data URL of the uploaded image (optional)
+ * @param {string}  content        - Farmer's message text
+ * @param {string}  imagePreview   - Base64 data URL of the uploaded image (current session)
+ * @param {boolean} imageAnalyzed  - True if this message had an image (from DB history)
  */
-function UserMessage({ content, imagePreview }) {
+function UserMessage({ content, imagePreview, imageAnalyzed }) {
   return (
     <div className="flex items-end justify-end mb-4 w-full">
       <div className="max-w-[75%] sm:max-w-[55%]">
         {imagePreview && (
           <div className="mb-1 flex justify-end">
             <img src={imagePreview} alt="uploaded crop" className="max-w-[160px] sm:max-w-[200px] max-h-[120px] sm:max-h-[150px] rounded-xl object-cover shadow-md border-2 border-[#1a4d1a] dark:border-green-600" />
+          </div>
+        )}
+        {!imagePreview && imageAnalyzed && (
+          <div className="mb-1 flex justify-end">
+            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg px-2 py-1">📷 Crop photo</span>
           </div>
         )}
         <div className="bg-[#1a4d1a] dark:bg-green-700 text-white rounded-2xl rounded-br-sm px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed transition-colors">
@@ -185,15 +194,19 @@ export default function Chat() {
    *
    * On success, automatically loads the most recent conversation.
    * If no conversations exist, shows the default welcome message.
+   * Pass skipMessageReload=true to only refresh the sidebar list
+   * without replacing the current in-memory messages (preserves imagePreview).
    */
-  async function loadConversations() {
+  async function loadConversations(skipMessageReload = false) {
     try {
       const res = await api.get('/conversations');
       setConversations(res.data.conversations);
-      if (res.data.conversations.length > 0 && !conversationId) {
-        loadConversation(res.data.conversations[0]._id);
-      } else if (res.data.conversations.length === 0) {
-        setMessages([{ role: 'bot', content: 'Hello! I am AgroBot 🌾! Your AI farming assistant. How can I help with your crops today?\nYou can ask me about weather, pest control, or describe your crop problem.', advisory: null }]);
+      if (!skipMessageReload) {
+        if (res.data.conversations.length > 0 && !conversationId) {
+          loadConversation(res.data.conversations[0]._id);
+        } else if (res.data.conversations.length === 0) {
+          setMessages([{ role: 'bot', content: 'Hello! I am AgroBot 🌾! Your AI farming assistant. How can I help with your crops today?\nYou can ask me about weather, pest control, or describe your crop problem.', advisory: null }]);
+        }
       }
     } catch (e) { console.warn('Failed to load conversations:', e.message); }
   }
@@ -202,6 +215,8 @@ export default function Chat() {
    * loadConversation — Load a specific conversation's messages by ID.
    *
    * Maps the server's role format ('assistant') to the UI format ('bot').
+   * For user messages that had an image, shows a camera badge instead of
+   * the raw [Image Analysis: ...] summary stored in the DB.
    */
   async function loadConversation(convId) {
     try {
@@ -209,7 +224,14 @@ export default function Chat() {
       const res = await api.get(`/conversations/${convId}`);
       const msgs = res.data.conversation.messages;
       if (msgs.length > 0) {
-        setMessages(msgs.map(m => ({ role: m.role === 'assistant' ? 'bot' : 'user', content: m.content, advisory: m.advisory || null })));
+        setMessages(msgs.map(m => ({
+          role: m.role === 'assistant' ? 'bot' : 'user',
+          // Show clean display text — never expose the [Image Analysis: ...] blob
+          content: m.content,
+          advisory: m.advisory || null,
+          // Mark image messages so UserMessage can show the 📷 badge
+          imageAnalyzed: m.imageAnalyzed || false
+        })));
       } else { setMessages([]); }
     } catch (e) { console.error('Failed to load conversation:', e.message); }
   }
@@ -285,12 +307,12 @@ export default function Chat() {
    *
    * Flow:
    *  1. Validate: at least text or image must be present
-   *  2. Optimistically add the user message to the UI immediately
-   *  3. Clear the image state before the async call (prevents double-send)
+   *  2. Optimistically add the user message to the UI immediately WITH imagePreview
+   *  3. Capture image data before clearing state
    *  4. Show typing indicator while waiting for the AI response
    *  5. POST to /api/chat with message + optional image data
    *  6. Append the bot response and advisory card to the message list
-   *  7. Refresh the conversation list in the sidebar
+   *  7. Refresh the conversation list in the sidebar (but NOT the messages)
    */
   async function sendMessage() {
     const text = input.trim();
@@ -298,16 +320,20 @@ export default function Chat() {
 
     setInput('');
     const userDisplayContent = text || '📷 Sent a crop photo for analysis';
+    
+    // Capture image preview BEFORE clearing state so it persists in the message
+    const capturedImagePreview = imagePreview;
+    
     setMessages(prev => [...prev, {
       role: 'user',
       content: userDisplayContent,
-      imagePreview: imagePreview,
+      imagePreview: capturedImagePreview, // stored in message object
       advisory: null
     }]);
 
     const imgBase64 = imageBase64;
     const imgMime = imageMimeType;
-    clearImage();
+    clearImage(); // clear input state, but message object still has imagePreview
 
     setTyping(true); setLoading(true);
     try {
@@ -317,10 +343,22 @@ export default function Chat() {
         payload.imageMimeType = imgMime;
       }
       const res = await api.post('/chat', payload);
-      if (res.data.conversationId) { setConversationId(res.data.conversationId); loadConversations(); }
-      setMessages(prev => [...prev, { role: 'bot', content: res.data.response.content, advisory: res.data.response.advisory }]);
+      if (res.data.conversationId) {
+        setConversationId(res.data.conversationId);
+        // Refresh sidebar list but DON'T reload messages (preserves imagePreview)
+        loadConversations(true);
+      }
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        content: res.data.response.content,
+        advisory: res.data.response.advisory
+      }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: `Sorry, something went wrong: ${err.response?.data?.error || err.message}`, advisory: null }]);
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        content: `Sorry, something went wrong: ${err.response?.data?.error || err.message}`,
+        advisory: null
+      }]);
     } finally { setTyping(false); setLoading(false); }
   }
 
@@ -435,7 +473,7 @@ export default function Chat() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          {messages.map((msg, i) => msg.role === 'bot' ? <BotMessage key={i} content={msg.content} advisory={msg.advisory} /> : <UserMessage key={i} content={msg.content} imagePreview={msg.imagePreview} />)}
+          {messages.map((msg, i) => msg.role === 'bot' ? <BotMessage key={i} content={msg.content} advisory={msg.advisory} /> : <UserMessage key={i} content={msg.content} imagePreview={msg.imagePreview} imageAnalyzed={msg.imageAnalyzed} />)}
           {typing && <TypingIndicator />}
           <div ref={bottomRef} className="h-8" />
         </div>

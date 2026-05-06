@@ -4,11 +4,8 @@ import { weatherTool } from '../tools/weatherTool.js';
 import { escalationTool } from '../tools/escalationTool.js';
 
 let openai = null;
-
 const getOpenAI = () => {
-  if (!openai) {
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
+  if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   return openai;
 };
 
@@ -73,90 +70,149 @@ const TOOL_DEFINITIONS = [
   }
 ];
 
-// ── Tool executor: maps function name → actual tool call ──────────────────────
+// ── Tool executor ─────────────────────────────────────────────────────────────
 async function executeTool(name, args) {
   console.log(`  🔧 Executing tool: ${name}`, args);
-
   switch (name) {
     case 'search_crop_diseases': {
       const result = cropKnowledgeTool.searchDiseases(args.crop, args.symptoms);
       console.log(`    ✓ Found ${result.totalMatches ?? 0} matching diseases`);
       return JSON.stringify(result);
     }
-
     case 'get_weather': {
       const result = await weatherTool.getWeather(args.location);
       console.log(`    ✓ Weather: ${result.temperature}°C, ${result.humidity}% humidity`);
       return JSON.stringify(result);
     }
-
     case 'check_escalation': {
       const shouldEscalate = escalationTool.shouldEscalate(args);
       console.log(`    ✓ Escalation needed: ${shouldEscalate}`);
       return JSON.stringify({ escalateToAgronomist: shouldEscalate });
     }
-
     default:
       return JSON.stringify({ error: `Unknown tool: ${name}` });
   }
 }
 
-// ── Minimum follow-up rounds required before final answer ────────────────────
-const MIN_FOLLOWUP_ROUNDS = 2;
+// ── Conversation state detection ──────────────────────────────────────────────
+//
+// We support two conversation flows:
+//
+//  TEXT FLOW  (no image ever sent)
+//    Requires MIN_TEXT_FOLLOWUPS follow-up rounds before final answer.
+//
+//  IMAGE FLOW (a user message has imageAnalysisSummary set, OR current message
+//              contains [Image Analysis:] — the latter covers the very first turn
+//              before the message is saved to DB)
+//
+// detectConversationState returns one of:
+//   { mode: 'text',  canFinalize: bool }
+//   { mode: 'image', phase: 'ask_followup' | 'finalize', imageContext: string }
 
-// ── Count how many follow-up rounds already happened in session ───────────────
-// A "round" = one assistant question + one farmer reply
-function countFollowUpRounds(sessionMessages) {
-  // sessionMessages are the SAVED messages (before current user message)
-  // Each assistant message that has NO advisory = a follow-up question round
-  let rounds = 0;
-  for (const msg of sessionMessages) {
-    if ((msg.role === 'assistant') && !msg.advisory) {
-      rounds++;
-    }
+const MIN_TEXT_FOLLOWUPS = 2;
+
+function detectConversationState(sessionMessages, currentMessage) {
+  // Check saved history for an image message (has imageAnalysisSummary field)
+  const savedImageMsg = sessionMessages.find(
+    m => m.role === 'user' && m.imageAnalysisSummary
+  );
+
+  // Also check if the current (unsaved) message carries image analysis inline
+  const currentHasImage = typeof currentMessage === 'string' &&
+    currentMessage.includes('[Image Analysis:');
+
+  if (!savedImageMsg && !currentHasImage) {
+    // ── TEXT FLOW ─────────────────────────────────────────────────────────
+    const followUpsDone = sessionMessages.filter(
+      m => m.role === 'assistant' && !m.advisory
+    ).length;
+    return { mode: 'text', canFinalize: followUpsDone >= MIN_TEXT_FOLLOWUPS };
   }
-  return rounds;
+
+  // ── IMAGE FLOW ────────────────────────────────────────────────────────────
+  // Prefer the stored summary; fall back to extracting from current message
+  const imageContext = savedImageMsg?.imageAnalysisSummary ?? currentMessage;
+
+  if (currentHasImage && !savedImageMsg) {
+    // Very first turn — image just arrived, not yet in DB
+    return { mode: 'image', phase: 'ask_followup', imageContext };
+  }
+
+  // Image was sent in a previous turn. Count assistant follow-ups after it.
+  const imageIndex = sessionMessages.findIndex(
+    m => m.role === 'user' && m.imageAnalysisSummary
+  );
+  const assistantFollowUpsAfterImage = sessionMessages
+    .slice(imageIndex + 1)
+    .filter(m => m.role === 'assistant' && !m.advisory)
+    .length;
+
+  if (assistantFollowUpsAfterImage >= 1) {
+    return { mode: 'image', phase: 'finalize', imageContext };
+  }
+
+  return { mode: 'image', phase: 'ask_followup', imageContext };
 }
 
-// ── Build system prompt dynamically based on follow-up progress ───────────────
-function buildSystemPrompt(followUpRoundsDone) {
-  const roundsRemaining = Math.max(0, MIN_FOLLOWUP_ROUNDS - followUpRoundsDone);
-  const canGiveFinalAnswer = followUpRoundsDone >= MIN_FOLLOWUP_ROUNDS;
-
-  return `You are AgroBot, an expert agricultural advisory AI for Bangladeshi farmers.
+// ── System prompt builder ─────────────────────────────────────────────────────
+function buildSystemPrompt(state) {
+  const base = `You are AgroBot, an expert agricultural advisory AI for Bangladeshi farmers.
 Your goal is to diagnose crop problems and provide practical, actionable advice.
 
-## Follow-up Status:
-- Follow-up rounds completed: ${followUpRoundsDone}
-- Minimum required: ${MIN_FOLLOWUP_ROUNDS}
-- Rounds still needed: ${roundsRemaining}
-- Can give final answer now: ${canGiveFinalAnswer}
+## General Rules:
+- Be concise and practical
+- Use simple language suitable for farmers
+- Always respond in English by default
+- Only respond in Bangla if the user writes in Bangla first`;
 
-## STRICT RULES:
+  if (state.mode === 'text' && !state.canFinalize) {
+    const roundsDone = state.followUpsDone ?? 0;
+    const remaining = MIN_TEXT_FOLLOWUPS - roundsDone;
+    return `${base}
 
-${!canGiveFinalAnswer ? `
-### ⚠ YOU MUST ASK FOLLOW-UP QUESTIONS — DO NOT GIVE A FINAL ANSWER YET
-You still need ${roundsRemaining} more follow-up round(s) before diagnosing.
-- Ask 2-3 specific questions to gather more information
-- Do NOT call any tools yet
-- Do NOT give a diagnosis yet
-- Focus on gathering: crop type, symptoms, location, duration, irrigation method
+## YOUR TASK: ASK FOLLOW-UP QUESTIONS (${remaining} round(s) remaining)
+You do NOT have enough information yet. Ask 2-3 specific questions to gather:
+- Crop type
+- Specific symptoms (color, shape, location on plant)
+- How long ago it started
+- Location/district in Bangladesh
+- Irrigation method
+- Whether it is spreading
 
-` : `
-### ✅ YOU HAVE ENOUGH FOLLOW-UP — NOW DIAGNOSE AND USE TOOLS
-You have completed the required follow-up rounds. Now:
-1. Call search_crop_diseases if crop + symptoms are known
-2. Call get_weather if location is mentioned
+DO NOT diagnose yet. DO NOT call any tools yet.`;
+  }
+
+  if (state.mode === 'image' && state.phase === 'ask_followup') {
+    return `${base}
+
+## YOUR TASK: IMAGE RECEIVED — ASK FOLLOW-UP QUESTIONS
+The farmer has uploaded a crop photo. The image has already been analyzed by our vision system.
+Here is what was detected from the image:
+
+${state.imageContext}
+
+Acknowledge what you can see in the image (crop, symptoms, likely condition).
+Then ask 2-3 targeted follow-up questions to complete the diagnosis:
+- Their location/district in Bangladesh (for weather context)
+- How long these symptoms have been present
+- Whether the problem is spreading to other plants
+- Irrigation method (if relevant)
+
+DO NOT give a final diagnosis yet. DO NOT call any tools yet.
+Be warm and reassuring — the farmer is worried about their crop.`;
+  }
+
+  // Finalize (both text and image flows)
+  return `${base}
+
+## YOUR TASK: DIAGNOSE AND USE TOOLS — GIVE FINAL ANSWER
+You now have enough information. Follow these steps:
+1. Call search_crop_diseases with the crop name and symptoms
+2. Call get_weather if the farmer mentioned their location/district
 3. Call check_escalation after identifying the disease
 4. Give a complete final diagnosis
 
-`}
-
-## What to ask in follow-up (if still needed):
-- Round 1: Ask about crop type, specific symptoms, and how long ago it started
-- Round 2: Ask about location/district, irrigation method, and whether it is spreading
-
-## Final response format (only when canGiveFinalAnswer is true):
+## Final response format:
 - **Disease:** name
 - **Confidence:** High/Medium/Low
 - **Cause:** fungal/bacterial/viral/pest
@@ -166,124 +222,97 @@ You have completed the required follow-up rounds. Now:
 - **Bangladesh Context:** local relevance
 - ⚠ Escalation warning if needed
 
-## General Rules:
-- Be concise and practical
-- Use simple language suitable for farmers
-- Always respond in English by default
-- Only respond in Bangla if the user writes in Bangla first
-
 ## When crop is NOT in the database (search_crop_diseases returns found: false):
-- Do NOT make up or guess a disease name from the database
-- Clearly tell the farmer: "This crop is not in our verified database yet"
+- Tell the farmer: "This crop is not in our verified database yet"
 - Show the list of supported crops from the tool result
-- Then use your own OpenAI agricultural knowledge to give general advice
-- Structure your general advice exactly like a normal final response:
-  - **Disease (General Knowledge):** best guess based on symptoms
-  - **Confidence:** Low (not from verified database)
-  - **Cause:** your best assessment
-  - **Recommended Actions:** practical steps
-  - **Prevention Tips:** general tips
-  - ⚠ Always add: "This advice is based on general agricultural knowledge, not our verified crop database. Please consult a local agronomist for confirmation."
-- Still call check_escalation after forming your general assessment
-- Still call get_weather if location is known (weather is always useful)`;
+- Use your own agricultural knowledge to give general advice
+- Structure it like a normal final response but label it **Disease (General Knowledge):**
+- Confidence: Low, always add escalation warning
+- Still call check_escalation and get_weather`;
 }
 
-// ── Main agentic agent ────────────────────────────────────────────────────────
+// ── Main agentic loop ─────────────────────────────────────────────────────────
 export const advisoryAgent = {
   async processMessage(userMessage, session) {
     console.log('\n=== AGENTIC PROCESSING ===');
-    console.log('User message:', userMessage);
+    console.log('User message (first 120 chars):', userMessage.substring(0, 120));
 
-    // Count how many follow-up rounds already done in this conversation
-    const followUpRoundsDone = countFollowUpRounds(session.messages);
-    const canGiveFinalAnswer = followUpRoundsDone >= MIN_FOLLOWUP_ROUNDS;
+    const state = detectConversationState(session.messages, userMessage);
+    const canFinalize = state.mode === 'text'
+      ? state.canFinalize
+      : state.phase === 'finalize';
 
-    console.log(`  Follow-up rounds done: ${followUpRoundsDone}/${MIN_FOLLOWUP_ROUNDS} — can finalize: ${canGiveFinalAnswer}`);
+    console.log(`  State: mode=${state.mode}${state.phase ? ` phase=${state.phase}` : ` canFinalize=${state.canFinalize}`}`);
 
-    // Build dynamic system prompt based on follow-up progress
-    const systemPrompt = buildSystemPrompt(followUpRoundsDone);
+    const systemPrompt = buildSystemPrompt(state);
 
-    // Build messages array with full conversation history
     const messages = [
       { role: 'system', content: systemPrompt },
-      // Include last 10 messages for context
+      // Last 10 saved messages for context.
+      // For user messages that had an image, use imageAnalysisSummary as content
+      // so the agent sees the full analysis context, not just the display text.
       ...session.messages.slice(-10).map(msg => ({
         role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
+        content: (msg.role === 'user' && msg.imageAnalysisSummary)
+          ? msg.imageAnalysisSummary
+          : msg.content
       })),
-      // Current user message
       { role: 'user', content: userMessage }
     ];
 
     let toolCallCount = 0;
     const MAX_TOOL_CALLS = 10;
 
-    // ── Agentic loop ──────────────────────────────────────────────────────────
     while (toolCallCount < MAX_TOOL_CALLS) {
       console.log(`\n→ Agent loop iteration ${toolCallCount + 1}`);
 
       const response = await getOpenAI().chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         messages,
-        // Only offer tools once follow-up is complete
-        tools: canGiveFinalAnswer ? TOOL_DEFINITIONS : undefined,
-        tool_choice: canGiveFinalAnswer ? 'auto' : undefined,
+        tools: canFinalize ? TOOL_DEFINITIONS : undefined,
+        tool_choice: canFinalize ? 'auto' : undefined,
         temperature: 0.4,
         max_tokens: 1500
       });
 
       const message = response.choices[0].message;
       const finishReason = response.choices[0].finish_reason;
-
       console.log(`  Finish reason: ${finishReason}`);
 
-      // Add assistant message to history
       messages.push(message);
 
-      // ── Agent decided to call tools ───────────────────────────────────────
+      // ── Tool calls ────────────────────────────────────────────────────────
       if (finishReason === 'tool_calls' && message.tool_calls?.length > 0) {
         console.log(`  → Agent requested ${message.tool_calls.length} tool(s)`);
-
-        // Execute ALL requested tools in parallel
         const toolResults = await Promise.all(
           message.tool_calls.map(async (toolCall) => {
             const args = JSON.parse(toolCall.function.arguments);
             const result = await executeTool(toolCall.function.name, args);
-            return {
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: result
-            };
+            return { role: 'tool', tool_call_id: toolCall.id, content: result };
           })
         );
-
         messages.push(...toolResults);
         toolCallCount += message.tool_calls.length;
         continue;
       }
 
-      // ── Agent finished — has a final text response ────────────────────────
+      // ── Final text response ───────────────────────────────────────────────
       if (finishReason === 'stop' && message.content) {
-        const isFinalAnswer = canGiveFinalAnswer && toolCallCount > 0;
+        const isFinalAnswer = canFinalize && toolCallCount > 0;
         console.log(`  ✓ Agent finished — ${isFinalAnswer ? 'FINAL ANSWER' : 'FOLLOW-UP QUESTION'} (${toolCallCount} tool calls)`);
         console.log('=== END AGENTIC PROCESSING ===\n');
 
-        // Only parse advisory card data for final answers (not follow-up questions)
         const advisory = isFinalAnswer
           ? this.parseAdvisoryFromResponse(message.content)
           : null;
 
-        return {
-          content: message.content,
-          advisory
-        };
+        return { content: message.content, advisory };
       }
 
       console.warn(`  ⚠ Unexpected finish reason: ${finishReason}`);
       break;
     }
 
-    // Fallback
     console.warn('⚠ Max tool calls reached');
     const lastMessage = messages[messages.length - 1];
     return {
@@ -293,53 +322,45 @@ export const advisoryAgent = {
   },
 
   // ── Parse structured advisory data from the text response ─────────────────
-  // This extracts key fields so the UI can display the advisory card
   parseAdvisoryFromResponse(content) {
     if (!content) return null;
 
     const lower = content.toLowerCase();
 
-    // Detect if this is a general knowledge fallback (crop not in database)
     const isGeneralKnowledge = lower.includes('not in our verified database') ||
       lower.includes('general knowledge') ||
       lower.includes('general agricultural knowledge');
 
-    // Try to extract disease name
-    const diseaseMatch = content.match(/\*\*?(?:disease(?:\s*\(general knowledge\))?)[:\s]+([^\n*]+)\*\*?/i)
-      || content.match(/\*\*?([A-Z][^*\n]+(?:disease|blight|rot|wilt|rust|smut|borer|virus|mildew|spot|blast|burn)[^*\n]*)\*\*?/i)
-      || content.match(/(?:disease|diagnosis|identified)[:\s]+\*?\*?([^\n*]+)/i);
+    const diseaseMatch =
+      content.match(/\*\*?(?:disease(?:\s*\(general knowledge\))?)[:\s]+([^\n*]+)\*\*?/i) ||
+      content.match(/\*\*?([A-Z][^*\n]+(?:disease|blight|rot|wilt|rust|smut|borer|virus|mildew|spot|blast|burn)[^*\n]*)\*\*?/i) ||
+      content.match(/(?:disease|diagnosis|identified)[:\s]+\*?\*?([^\n*]+)/i);
 
-    // Try to extract confidence
     const confidenceMatch = content.match(/confidence[:\s]+\*?\*?(High|Medium|Low)\*?\*?/i);
-
-    // Try to extract cause type
     const causeMatch = content.match(/cause[:\s]+\*?\*?(fungal|bacterial|viral|pest)\*?\*?/i);
 
-    // Check for escalation warning
-    const escalate = lower.includes('consult an agronomist') ||
+    const escalate =
+      lower.includes('consult an agronomist') ||
       lower.includes('consult a local agronomist') ||
       lower.includes('professional') ||
       lower.includes('⚠');
 
-    // Extract recommended actions
     const actionsMatch = content.match(/(?:recommended actions?|treatment)[:\s]*\n((?:\d+\..+\n?)+)/i);
     const actions = actionsMatch
       ? actionsMatch[1].split('\n').filter(l => l.trim()).map(l => l.replace(/^\d+\.\s*/, '').trim())
       : [];
 
-    // For general knowledge fallback, always return an advisory with low confidence
     if (isGeneralKnowledge) {
       return {
         likelyDisease: diseaseMatch?.[1]?.trim() || 'Unknown (crop not in database)',
         confidence: 'Low',
         causeType: causeMatch?.[1] || null,
         recommendedActions: actions,
-        escalateToAgronomist: true, // always escalate when not from verified data
+        escalateToAgronomist: true,
         isGeneralKnowledge: true
       };
     }
 
-    // Only return advisory object if we found a disease
     if (!diseaseMatch && !confidenceMatch) return null;
 
     return {

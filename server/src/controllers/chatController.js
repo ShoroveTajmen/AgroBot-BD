@@ -96,10 +96,14 @@ export const chat = async (req, res) => {
     }
 
     // ── Save user message to conversation ─────────────────────────────────────
+    // content = clean display text (no analysis blob) so the UI shows it cleanly.
+    // imageAnalysisSummary = the full [Image Analysis: ...] context that the agent
+    // needs — stored separately so we can reconstruct finalMessage on future turns.
     conversation.messages.push({
       role: 'user',
       content: message || '📷 Sent a crop photo for analysis',
-      imageAnalyzed: !!image
+      imageAnalyzed: !!image,
+      imageAnalysisSummary: image ? finalMessage : undefined
     });
 
     // ── Run the advisory agent ────────────────────────────────────────────────

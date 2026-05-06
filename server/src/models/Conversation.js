@@ -28,9 +28,13 @@ import mongoose from 'mongoose';
  */
 const messageSchema = new mongoose.Schema(
   {
-    role:     { type: String, enum: ['user', 'assistant'], required: true },
-    content:  { type: String, required: true },
-    advisory: { type: mongoose.Schema.Types.Mixed, default: null } // null until final diagnosis
+    role:                 { type: String, enum: ['user', 'assistant'], required: true },
+    content:              { type: String, required: true },
+    advisory:             { type: mongoose.Schema.Types.Mixed, default: null },
+    imageAnalyzed:        { type: Boolean, default: false },
+    // Stores the full "[Image Analysis: ...]" context string separately from
+    // display content so the agent can use it without polluting the UI.
+    imageAnalysisSummary: { type: String, default: null }
   },
   { timestamps: true }
 );
